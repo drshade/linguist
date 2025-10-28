@@ -3,7 +3,7 @@ mod test_detection_by_extension {
 
     /// Helper: Assert that the detected languages contain the expected language
     fn assert_detects(filename: &str, expected_language: &str) {
-        let langs = detect_language_by_extension(filename);
+        let langs = detect_language_by_extension(filename).expect("Should not error");
         let detected_names: Vec<&str> = langs.iter().map(|(name, _)| *name).collect();
         assert!(
             detected_names.contains(&expected_language),
@@ -16,7 +16,7 @@ mod test_detection_by_extension {
 
     /// Helper: Assert that only one language is detected and it matches the expected language
     fn assert_detects_only(filename: &str, expected_language: &str) {
-        let langs = detect_language_by_extension(filename);
+        let langs = detect_language_by_extension(filename).expect("Should not error");
         assert_eq!(
             langs.len(),
             1,
@@ -34,7 +34,7 @@ mod test_detection_by_extension {
 
     /// Helper: Assert that no language is detected
     fn assert_detects_none(filename: &str) {
-        let langs = detect_language_by_extension(filename);
+        let langs = detect_language_by_extension(filename).expect("Should not error");
         assert!(
             langs.is_empty(),
             "Expected no language for '{}', but got: {:?}",
@@ -117,14 +117,19 @@ mod test_detection_by_extension {
     #[test]
     fn returns_language_objects() {
         // Verify we get full Language objects with metadata
-        let langs = detect_language_by_extension("script.py");
+        let langs = detect_language_by_extension("script.py").expect("Should not error");
         assert_eq!(langs.len(), 1);
 
         let (name, lang) = langs[0];
         assert_eq!(name, "Python");
         assert_eq!(lang.ace_mode, "python");
         assert_eq!(lang.tm_scope, "source.python");
-        assert!(lang.extensions.as_ref().unwrap().contains(&".py".to_string()));
+        assert!(
+            lang.extensions
+                .as_ref()
+                .unwrap()
+                .contains(&".py".to_string())
+        );
         assert!(lang.color.is_some());
     }
 }

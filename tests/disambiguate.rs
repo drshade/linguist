@@ -3,7 +3,7 @@ mod test_disambiguate {
 
     /// Helper: Assert that disambiguation returns the expected language
     fn assert_disambiguates(filename: &str, content: &str, expected_language: &str) {
-        let result = disambiguate(filename, content);
+        let result = disambiguate(filename, content).expect("Should not error");
         assert!(
             result.is_some(),
             "Expected disambiguation to return a result for '{}', but got None",
@@ -24,7 +24,7 @@ mod test_disambiguate {
 
     /// Helper: Assert that disambiguation returns None
     fn assert_no_disambiguation(filename: &str, content: &str) {
-        let result = disambiguate(filename, content);
+        let result = disambiguate(filename, content).expect("Should not error");
 
         assert!(
             result.is_none(),
@@ -150,7 +150,7 @@ function greet(user: User): void {
     fn empty_content() {
         // Empty content should still try to disambiguate
         // Depending on the rules, it might match a fallback
-        let result = disambiguate("test.h", "");
+        let result = disambiguate("test.h", "").expect("Should not error");
         // We don't assert a specific result here, as it depends on heuristic rules
         // Just verify it doesn't panic
         let _ = result;

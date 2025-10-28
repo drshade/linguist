@@ -3,7 +3,7 @@ mod test_detection_by_filename {
 
     /// Helper: Assert that only one language is detected and it matches the expected language
     fn assert_detects_only(filename: &str, expected_language: &str) {
-        let langs = detect_language_by_filename(filename);
+        let langs = detect_language_by_filename(filename).expect("Should not error");
         assert_eq!(
             langs.len(),
             1,
@@ -21,7 +21,7 @@ mod test_detection_by_filename {
 
     /// Helper: Assert that no language is detected
     fn assert_detects_none(filename: &str) {
-        let langs = detect_language_by_filename(filename);
+        let langs = detect_language_by_filename(filename).expect("Should not error");
         assert!(
             langs.is_empty(),
             "Expected no language for '{}', but got: {:?}",
