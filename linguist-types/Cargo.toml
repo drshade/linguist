@@ -1,0 +1,10 @@
+[package]
+name = "linguist-types"
+version = "0.1.0"
+edition = "2024"
+
+description = "Type definitions for linguist language detection library"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
