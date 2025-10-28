@@ -1,0 +1,10 @@
+[package]
+name = "linguist"
+version = "0.1.0"
+edition = "2024"
+
+description = "Programming language detection library inspired by Github Linguist, embeddable into Rust projects."
+license = "MIT"
+repository = "https://github.com/synthesis-labs/linguist"
+
+[dependencies]
