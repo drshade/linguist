@@ -11,15 +11,6 @@ A Rust library for programming language detection, inspired by [GitHub Linguist]
 - Static compilation of 789 language definitions
 - Zero runtime dependencies for language data
 
-## Installation
-
-Add this to your `Cargo.toml`:
-
-```toml
-[dependencies]
-linguist = "0.1.0"
-```
-
 ## Usage
 
 ### Detect by Extension
@@ -60,10 +51,6 @@ use linguist::is_vendored;
 assert!(is_vendored("node_modules/react/index.js")?);
 assert!(!is_vendored("src/main.rs")?);
 ```
-
-## License
-
-MIT
 
 ## Acknowledgments
 
