@@ -4,9 +4,13 @@ mod test_detection_by_extension {
     /// Helper: Assert that the detected languages contain the expected language
     fn assert_detects(filename: &str, expected_language: &str) {
         let langs = detect_language_by_extension(filename).expect("Should not error");
-        let detected_names: Vec<&str> = langs.iter().map(|(name, _)| *name).collect();
+        let detected_names: Vec<&String> = langs.iter().map(|(name, _)| *name).collect();
         assert!(
-            detected_names.contains(&expected_language),
+            detected_names
+                .iter()
+                .map(|n| n.as_str())
+                .collect::<Vec<&str>>()
+                .contains(&expected_language),
             "Expected '{}' to be detected for '{}', but got: {:?}",
             expected_language,
             filename,

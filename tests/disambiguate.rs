@@ -12,7 +12,11 @@ mod test_disambiguate {
 
         // Ensure the expected_language is an element in the list of results
         //
-        let detected_names: Vec<&str> = result.unwrap().iter().map(|(name, _)| *name).collect();
+        let detected_names: Vec<&str> = result
+            .unwrap()
+            .iter()
+            .map(|(name, _)| name.as_str())
+            .collect();
         assert!(
             detected_names.contains(&expected_language),
             "Expected '{}' for '{}', but got '{:?}'",
@@ -30,11 +34,7 @@ mod test_disambiguate {
             result.is_none(),
             "Expected no disambiguation for '{}', but got: {:?}",
             filename,
-            result
-                .unwrap()
-                .iter()
-                .map(|(name, _)| *name)
-                .collect::<Vec<&str>>()
+            result.unwrap()
         );
     }
 
