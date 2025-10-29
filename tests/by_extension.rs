@@ -4,13 +4,9 @@ mod test_detection_by_extension {
     /// Helper: Assert that the detected languages contain the expected language
     fn assert_detects(filename: &str, expected_language: &str) {
         let langs = detect_language_by_extension(filename).expect("Should not error");
-        let detected_names: Vec<&String> = langs.iter().map(|(name, _)| *name).collect();
+        let detected_names: Vec<&str> = langs.iter().map(|lang| lang.name).collect();
         assert!(
-            detected_names
-                .iter()
-                .map(|n| n.as_str())
-                .collect::<Vec<&str>>()
-                .contains(&expected_language),
+            detected_names.contains(&expected_language),
             "Expected '{}' to be detected for '{}', but got: {:?}",
             expected_language,
             filename,
@@ -28,11 +24,10 @@ mod test_detection_by_extension {
             filename,
             langs.len()
         );
-        let (detected_name, _detected_lang) = langs[0];
         assert_eq!(
-            detected_name, expected_language,
+            langs[0].name, expected_language,
             "Expected '{}' for '{}', but got '{}'",
-            expected_language, filename, detected_name
+            expected_language, filename, langs[0].name
         );
     }
 
@@ -43,7 +38,7 @@ mod test_detection_by_extension {
             langs.is_empty(),
             "Expected no language for '{}', but got: {:?}",
             filename,
-            langs.iter().map(|(name, _)| name).collect::<Vec<_>>()
+            langs.iter().map(|lang| lang.name).collect::<Vec<_>>()
         );
     }
 
@@ -124,16 +119,18 @@ mod test_detection_by_extension {
         let langs = detect_language_by_extension("script.py").expect("Should not error");
         assert_eq!(langs.len(), 1);
 
-        let (name, lang) = langs[0];
-        assert_eq!(name, "Python");
-        assert_eq!(lang.ace_mode, "python");
-        assert_eq!(lang.tm_scope, "source.python");
+        let detected = &langs[0];
+        assert_eq!(detected.name, "Python");
+        assert_eq!(detected.definition.ace_mode, "python");
+        assert_eq!(detected.definition.tm_scope, "source.python");
         assert!(
-            lang.extensions
+            detected
+                .definition
+                .extensions
                 .as_ref()
                 .unwrap()
                 .contains(&".py".to_string())
         );
-        assert!(lang.color.is_some());
+        assert!(detected.definition.color.is_some());
     }
 }

@@ -1,6 +1,6 @@
 pub mod definitions;
 pub mod error;
-pub mod indexed;
+pub(crate) mod indexed;
 pub mod utils;
 
 use linguist_types::{HeuristicRule, Language};
@@ -11,10 +11,22 @@ pub use error::LinguistError;
 /// Type alias for Results in this crate
 pub type Result<T> = std::result::Result<T, LinguistError>;
 
+/// Represents a detected programming language.
+///
+/// Contains both the language name and full language definition with metadata.
+#[derive(Debug, Clone)]
+pub struct DetectedLanguage {
+    /// The name of the detected language (e.g., "Python", "Rust")
+    pub name: &'static str,
+
+    /// The full language definition with metadata (type, color, extensions, etc.)
+    pub definition: &'static Language,
+}
+
 /// Detects programming language(s) by file extension.
 ///
 /// Returns a Result containing either:
-/// - Ok(Vec<..>) with matching languages (empty vec if no matches)
+/// - Ok(Vec<DetectedLanguage>) with matching languages (empty vec if no matches)
 /// - Err(LinguistError) on error
 ///
 /// # Arguments
@@ -23,7 +35,7 @@ pub type Result<T> = std::result::Result<T, LinguistError>;
 ///
 /// # Returns
 ///
-/// A Result with a vector of (name, language) tuples. Empty if no matching language is found.
+/// A Result with a vector of DetectedLanguage. Empty if no matching language is found.
 ///
 /// # Examples
 ///
@@ -33,17 +45,15 @@ pub type Result<T> = std::result::Result<T, LinguistError>;
 /// // Unambiguous extension
 /// let langs = detect_language_by_extension("script.py")?;
 /// assert_eq!(langs.len(), 1);
-/// assert_eq!(langs[0].0, "Python");
+/// assert_eq!(langs[0].name, "Python");
 ///
 /// // Some extensions are ambiguous
 /// let langs = detect_language_by_extension("header.h")?;
-/// assert!(langs.iter().any(|(name, _)| *name == "C"));
-/// assert!(langs.iter().any(|(name, _)| *name == "C++"));
+/// assert!(langs.iter().any(|lang| lang.name == "C"));
+/// assert!(langs.iter().any(|lang| lang.name == "C++"));
 /// # Ok::<(), linguist::LinguistError>(())
 /// ```
-pub fn detect_language_by_extension<P: AsRef<Path>>(
-    filepath: P,
-) -> Result<Vec<(&'static String, &'static Language)>> {
+pub fn detect_language_by_extension<P: AsRef<Path>>(filepath: P) -> Result<Vec<DetectedLanguage>> {
     // Get just the filename
     //
     let filename_str = utils::get_filename_from_path(filepath.as_ref())?;
@@ -59,7 +69,10 @@ pub fn detect_language_by_extension<P: AsRef<Path>>(
                 // duplicates within an extension, but we need to check across extensions)
                 if seen_languages.insert(lang_name) {
                     if let Some(lang_def) = definitions::LANGUAGES.get(lang_name) {
-                        matching_languages.push((lang_name, lang_def));
+                        matching_languages.push(DetectedLanguage {
+                            name: lang_name.as_str(),
+                            definition: lang_def,
+                        });
                     }
                 }
             }
@@ -80,7 +93,7 @@ pub fn detect_language_by_extension<P: AsRef<Path>>(
 ///
 /// # Returns
 ///
-/// A Result with a vector of (name, language) tuples. Empty if no matching language is found.
+/// A Result with a vector of DetectedLanguage. Empty if no matching language is found.
 ///
 /// # Examples
 ///
@@ -89,16 +102,14 @@ pub fn detect_language_by_extension<P: AsRef<Path>>(
 ///
 /// let langs = detect_language_by_filename("Makefile")?;
 /// assert_eq!(langs.len(), 1);
-/// assert_eq!(langs[0].0, "Makefile");
+/// assert_eq!(langs[0].name, "Makefile");
 ///
 /// let langs = detect_language_by_filename(".gitignore")?;
 /// assert_eq!(langs.len(), 1);
-/// assert_eq!(langs[0].0, "Ignore List");
+/// assert_eq!(langs[0].name, "Ignore List");
 /// # Ok::<(), linguist::LinguistError>(())
 /// ```
-pub fn detect_language_by_filename<P: AsRef<Path>>(
-    filepath: P,
-) -> Result<Vec<(&'static String, &'static Language)>> {
+pub fn detect_language_by_filename<P: AsRef<Path>>(filepath: P) -> Result<Vec<DetectedLanguage>> {
     // Get just the filename
     //
     let filename_str = utils::get_filename_from_path(filepath.as_ref())?;
@@ -109,7 +120,10 @@ pub fn detect_language_by_filename<P: AsRef<Path>>(
     if let Some(language_names) = indexed::LANGUAGES_BY_FILENAME.get(filename_str) {
         for lang_name in language_names {
             if let Some(lang_def) = definitions::LANGUAGES.get(lang_name) {
-                matching_languages.push((lang_name, lang_def));
+                matching_languages.push(DetectedLanguage {
+                    name: lang_name.as_str(),
+                    definition: lang_def,
+                });
             }
         }
     }
@@ -130,8 +144,8 @@ pub fn detect_language_by_filename<P: AsRef<Path>>(
 ///
 /// # Returns
 ///
-/// A Result containing an Option with (name, language) tuples if a match is found, None if
-/// no heuristic rules match, or an error if the path is invalid or regex patterns are malformed.
+/// A Result containing a vector of DetectedLanguage if a match is found (empty vec if
+/// no heuristic rules match), or an error if the path is invalid or regex patterns are malformed.
 ///
 /// # Examples
 ///
@@ -140,13 +154,13 @@ pub fn detect_language_by_filename<P: AsRef<Path>>(
 ///
 /// let content = "#!/usr/bin/env ruby\nputs 'Hello'";
 /// let result = disambiguate("script.rb", content)?;
-/// // Will return Ok(Some(vec![("Ruby", &Language {...})]))
+/// // Will return Ok(vec![DetectedLanguage { name: "Ruby", ... }])
 /// # Ok::<(), linguist::LinguistError>(())
 /// ```
 pub fn disambiguate<P: AsRef<Path>>(
     filepath: P,
     file_contents: &str,
-) -> Result<Option<Vec<(&'static String, &'static Language)>>> {
+) -> Result<Vec<DetectedLanguage>> {
     // Get just the filename
     //
     let filename_str = utils::get_filename_from_path(filepath.as_ref())?;
@@ -165,10 +179,13 @@ pub fn disambiguate<P: AsRef<Path>>(
                                 // If we have a hit - find the language definition by name in the
                                 // LANGUAGES struct
                                 if let Some(lang_def) = definitions::LANGUAGES.get(lang_name) {
-                                    matching_languages.push((lang_name, lang_def));
+                                    matching_languages.push(DetectedLanguage {
+                                        name: lang_name.as_str(),
+                                        definition: lang_def,
+                                    });
                                 }
                             }
-                            return Ok(Some(matching_languages));
+                            return Ok(matching_languages);
                         }
                     }
                 }
@@ -178,7 +195,7 @@ pub fn disambiguate<P: AsRef<Path>>(
 
     // No disambiguation rules matched - this is not an error,
     // just means the file doesn't need disambiguation or no rules applied
-    Ok(None)
+    Ok(vec![])
 }
 
 /// Helper function to evaluate a single heuristic rule against file contents

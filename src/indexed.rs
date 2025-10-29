@@ -4,6 +4,10 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
+//
+// Indexed structures for faster lookups etc
+//
+
 pub type Filename = String;
 pub type Extension = String;
 pub type LanguageName = String;

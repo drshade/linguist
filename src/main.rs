@@ -21,8 +21,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // By filename
     match detect_language_by_filename(filename) {
         Ok(languages) => {
-            for (name, _lang) in languages {
-                println!("{} -> {} (by filename)", filename, name);
+            for lang in languages {
+                println!("{} -> {} (by filename)", filename, lang.name);
             }
         }
         Err(e) => eprintln!("Error detecting by filename: {}", e),
@@ -31,8 +31,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // By extension
     match detect_language_by_extension(filename) {
         Ok(languages) => {
-            for (name, _lang) in languages {
-                println!("{} -> {} (by extension)", filename, name);
+            for lang in languages {
+                println!("{} -> {} (by extension)", filename, lang.name);
             }
         }
         Err(e) => eprintln!("Error detecting by extension: {}", e),
@@ -41,12 +41,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Disambiguate
     if let Ok(content) = std::fs::read_to_string(filename) {
         match disambiguate(filename, &content) {
-            Ok(Some(languages)) => {
-                for (name, _lang) in languages {
-                    println!("{} -> {} (by disambiguation)", filename, name);
+            Ok(languages) => {
+                for lang in languages {
+                    println!("{} -> {} (by disambiguation)", filename, lang.name);
                 }
             }
-            Ok(None) => println!("{} could not be disambiguated", filename),
             Err(e) => eprintln!("Error during disambiguation: {}", e),
         }
     } else {

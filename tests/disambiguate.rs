@@ -5,18 +5,14 @@ mod test_disambiguate {
     fn assert_disambiguates(filename: &str, content: &str, expected_language: &str) {
         let result = disambiguate(filename, content).expect("Should not error");
         assert!(
-            result.is_some(),
-            "Expected disambiguation to return a result for '{}', but got None",
+            !result.is_empty(),
+            "Expected disambiguation to return a result for '{}', but got empty",
             filename
         );
 
         // Ensure the expected_language is an element in the list of results
         //
-        let detected_names: Vec<&str> = result
-            .unwrap()
-            .iter()
-            .map(|(name, _)| name.as_str())
-            .collect();
+        let detected_names: Vec<&str> = result.iter().map(|lang| lang.name).collect();
         assert!(
             detected_names.contains(&expected_language),
             "Expected '{}' for '{}', but got '{:?}'",
@@ -26,15 +22,15 @@ mod test_disambiguate {
         );
     }
 
-    /// Helper: Assert that disambiguation returns None
+    /// Helper: Assert that disambiguation returns empty vec
     fn assert_no_disambiguation(filename: &str, content: &str) {
         let result = disambiguate(filename, content).expect("Should not error");
 
         assert!(
-            result.is_none(),
+            result.is_empty(),
             "Expected no disambiguation for '{}', but got: {:?}",
             filename,
-            result.unwrap()
+            result.iter().map(|lang| lang.name).collect::<Vec<_>>()
         );
     }
 

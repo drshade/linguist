@@ -11,11 +11,10 @@ mod test_detection_by_filename {
             filename,
             langs.len()
         );
-        let (detected_name, _detected_lang) = langs[0];
         assert_eq!(
-            detected_name, expected_language,
+            langs[0].name, expected_language,
             "Expected '{}' for '{}', but got '{}'",
-            expected_language, filename, detected_name
+            expected_language, filename, langs[0].name
         );
     }
 
@@ -26,7 +25,7 @@ mod test_detection_by_filename {
             langs.is_empty(),
             "Expected no language for '{}', but got: {:?}",
             filename,
-            langs.iter().map(|(name, _)| name).collect::<Vec<_>>()
+            langs.iter().map(|lang| lang.name).collect::<Vec<_>>()
         );
     }
 
