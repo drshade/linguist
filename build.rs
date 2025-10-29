@@ -14,11 +14,10 @@ fn main() {
         let reader = BufReader::new(file);
         serde_yaml_ng::from_reader(reader).expect("Failed to parse languages.yml")
     };
-    let languages_json = serde_json::to_vec(&languages)
-        .expect("Failed to serialize languages to JSON");
+    let languages_json =
+        serde_json::to_vec(&languages).expect("Failed to serialize languages to JSON");
     std::fs::write(out_dir.join("languages.json"), &languages_json)
         .expect("Failed to write languages.json");
-    println!("cargo:warning=Generated languages.json with {} bytes", languages_json.len());
 
     // Parse and serialize heuristics.yml
     println!("cargo:rerun-if-changed=definitions/heuristics.yml");
@@ -27,11 +26,10 @@ fn main() {
         let reader = BufReader::new(file);
         serde_yaml_ng::from_reader(reader).expect("Failed to parse heuristics.yml")
     };
-    let heuristics_json = serde_json::to_vec(&heuristics)
-        .expect("Failed to serialize heuristics to JSON");
+    let heuristics_json =
+        serde_json::to_vec(&heuristics).expect("Failed to serialize heuristics to JSON");
     std::fs::write(out_dir.join("heuristics.json"), &heuristics_json)
         .expect("Failed to write heuristics.json");
-    println!("cargo:warning=Generated heuristics.json with {} bytes", heuristics_json.len());
 
     // Parse and serialize vendor.yml
     println!("cargo:rerun-if-changed=definitions/vendor.yml");
@@ -40,9 +38,6 @@ fn main() {
         let reader = BufReader::new(file);
         serde_yaml_ng::from_reader(reader).expect("Failed to parse vendor.yml")
     };
-    let vendor_json = serde_json::to_vec(&vendor)
-        .expect("Failed to serialize vendor to JSON");
-    std::fs::write(out_dir.join("vendor.json"), &vendor_json)
-        .expect("Failed to write vendor.json");
-    println!("cargo:warning=Generated vendor.json with {} bytes", vendor_json.len());
+    let vendor_json = serde_json::to_vec(&vendor).expect("Failed to serialize vendor to JSON");
+    std::fs::write(out_dir.join("vendor.json"), &vendor_json).expect("Failed to write vendor.json");
 }
