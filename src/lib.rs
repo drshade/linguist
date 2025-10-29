@@ -67,13 +67,13 @@ pub fn detect_language_by_extension<P: AsRef<Path>>(filepath: P) -> Result<Vec<D
             for lang_name in language_names {
                 // Avoid adding the same language multiple times (HashSet already prevents
                 // duplicates within an extension, but we need to check across extensions)
-                if seen_languages.insert(lang_name) {
-                    if let Some(lang_def) = definitions::LANGUAGES.get(lang_name) {
-                        matching_languages.push(DetectedLanguage {
-                            name: lang_name.as_str(),
-                            definition: lang_def,
-                        });
-                    }
+                if seen_languages.insert(lang_name)
+                    && let Some(lang_def) = definitions::LANGUAGES.get(lang_name)
+                {
+                    matching_languages.push(DetectedLanguage {
+                        name: lang_name.as_str(),
+                        definition: lang_def,
+                    });
                 }
             }
         }
@@ -172,21 +172,21 @@ pub fn disambiguate<P: AsRef<Path>>(
             for disambiguation in disambiguations {
                 // Try each rule in this disambiguation
                 for rule in &disambiguation.rules {
-                    if evaluate_rule(rule, file_contents)? {
-                        if let Some(ref lang_names) = rule.language {
-                            let mut matching_languages = Vec::new();
-                            for lang_name in lang_names {
-                                // If we have a hit - find the language definition by name in the
-                                // LANGUAGES struct
-                                if let Some(lang_def) = definitions::LANGUAGES.get(lang_name) {
-                                    matching_languages.push(DetectedLanguage {
-                                        name: lang_name.as_str(),
-                                        definition: lang_def,
-                                    });
-                                }
+                    if evaluate_rule(rule, file_contents)?
+                        && let Some(ref lang_names) = rule.language
+                    {
+                        let mut matching_languages = Vec::new();
+                        for lang_name in lang_names {
+                            // If we have a hit - find the language definition by name in the
+                            // LANGUAGES struct
+                            if let Some(lang_def) = definitions::LANGUAGES.get(lang_name) {
+                                matching_languages.push(DetectedLanguage {
+                                    name: lang_name.as_str(),
+                                    definition: lang_def,
+                                });
                             }
-                            return Ok(matching_languages);
                         }
+                        return Ok(matching_languages);
                     }
                 }
             }
@@ -229,18 +229,18 @@ fn evaluate_rule(rule: &HeuristicRule, file_contents: &str) -> Result<bool> {
 
     // Check positive pattern
     //
-    if let Some(ref pattern) = rule.pattern {
-        if !utils::matches_pattern(pattern, file_contents)? {
-            return Ok(false);
-        }
+    if let Some(ref pattern) = rule.pattern
+        && !utils::matches_pattern(pattern, file_contents)?
+    {
+        return Ok(false);
     }
 
     // Check negative pattern
     //
-    if let Some(ref neg_pattern) = rule.negative_pattern {
-        if utils::matches_pattern(neg_pattern, file_contents)? {
-            return Ok(false);
-        }
+    if let Some(ref neg_pattern) = rule.negative_pattern
+        && utils::matches_pattern(neg_pattern, file_contents)?
+    {
+        return Ok(false);
     }
 
     // Otherwise it's a match!
@@ -276,7 +276,7 @@ pub fn is_vendored<P: AsRef<Path>>(filepath: P) -> Result<bool> {
     let path = filepath.as_ref();
     let path_str = path
         .to_str()
-        .ok_or_else(|| LinguistError::InvalidPath(format!("{:?}", path)))?;
+        .ok_or_else(|| LinguistError::InvalidPath(format!("{path:?}")))?;
 
     // Check if the path matches any precompiled vendor pattern
     //

@@ -17,13 +17,13 @@ impl fmt::Display for LinguistError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             LinguistError::InvalidPath(path) => {
-                write!(f, "Invalid path: {}", path)
+                write!(f, "Invalid path: {path}")
             }
             LinguistError::InvalidRegex { pattern, error } => {
-                write!(f, "Invalid regex pattern '{}': {}", pattern, error)
+                write!(f, "Invalid regex pattern '{pattern}': {error}")
             }
             LinguistError::MissingNamedPattern(name) => {
-                write!(f, "Named pattern '{}' not found in heuristics", name)
+                write!(f, "Named pattern '{name}' not found in heuristics")
             }
         }
     }

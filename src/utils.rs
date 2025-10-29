@@ -36,7 +36,7 @@ pub fn get_filename_from_path(path: &Path) -> Result<&str> {
         .file_name()
         .ok_or(LinguistError::InvalidPath("Not a filename".to_string()))?
         .to_str()
-        .ok_or_else(|| LinguistError::InvalidPath(format!("{:?}", path)))?;
+        .ok_or_else(|| LinguistError::InvalidPath(format!("{path:?}")))?;
     Ok(filename_str)
 }
 

@@ -13,9 +13,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Is it vendored?
     match is_vendored(filename) {
-        Ok(true) => println!("{} -> is vendored", filename),
-        Ok(false) => println!("{} -> is not vendored", filename),
-        Err(e) => eprintln!("Error checking if vendored: {}", e),
+        Ok(true) => println!("{filename} -> is vendored"),
+        Ok(false) => println!("{filename} -> is not vendored"),
+        Err(e) => eprintln!("Error checking if vendored: {e}"),
     }
 
     // By filename
@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("{} -> {} (by filename)", filename, lang.name);
             }
         }
-        Err(e) => eprintln!("Error detecting by filename: {}", e),
+        Err(e) => eprintln!("Error detecting by filename: {e}"),
     }
 
     // By extension
@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("{} -> {} (by extension)", filename, lang.name);
             }
         }
-        Err(e) => eprintln!("Error detecting by extension: {}", e),
+        Err(e) => eprintln!("Error detecting by extension: {e}"),
     }
 
     // Disambiguate
@@ -46,10 +46,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("{} -> {} (by disambiguation)", filename, lang.name);
                 }
             }
-            Err(e) => eprintln!("Error during disambiguation: {}", e),
+            Err(e) => eprintln!("Error during disambiguation: {e}"),
         }
     } else {
-        eprintln!("Failed to read file: {}", filename);
+        eprintln!("Failed to read file: {filename}");
     }
 
     Ok(())
