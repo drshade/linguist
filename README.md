@@ -18,7 +18,7 @@ A Rust library for programming language detection, inspired by [GitHub Linguist]
 use linguist::detect_language_by_extension;
 
 let languages = detect_language_by_extension("script.py")?;
-assert_eq!(languages[0].0, "Python");
+assert_eq!(languages[0].name, "Python");
 ```
 
 ### Detect by Filename
@@ -27,7 +27,7 @@ assert_eq!(languages[0].0, "Python");
 use linguist::detect_language_by_filename;
 
 let languages = detect_language_by_filename("Makefile")?;
-assert_eq!(languages[0].0, "Makefile");
+assert_eq!(languages[0].name, "Makefile");
 ```
 
 ### Disambiguate by Content
@@ -38,7 +38,7 @@ use linguist::disambiguate;
 let content = "#include <iostream>\nint main() {}";
 let result = disambiguate("test.h", content)?;
 if let Some(languages) = result {
-    assert_eq!(languages[0].0, "C++");
+    assert_eq!(languages[0].name, "C++");
 }
 ```
 

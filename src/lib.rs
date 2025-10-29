@@ -1,3 +1,14 @@
+//! Programming language detection library inspired by GitHub Linguist (and
+//! using it's language and heuristic datasets)
+//!
+//! This crate provides fast, accurate programming language detection using:
+//! - File extension matching
+//! - Exact filename matching
+//! - Content-based heuristic disambiguation
+//! - Vendored file detection
+//!
+//! All language data is embedded at compile-time for zero-cost lookups.
+
 pub mod definitions;
 pub mod error;
 pub(crate) mod indexed;
@@ -145,7 +156,7 @@ pub fn detect_language_by_filename<P: AsRef<Path>>(filepath: P) -> Result<Vec<De
 /// # Returns
 ///
 /// A Result containing a vector of DetectedLanguage if a match is found (empty vec if
-/// no heuristic rules match), or an error if the path is invalid or regex patterns are malformed.
+/// no heuristic rules match), or an error if the path is invalid.
 ///
 /// # Examples
 ///

@@ -79,10 +79,9 @@ pub static VENDOR_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
             Ok(regex) => Some(regex),
             Err(e) => {
                 // Should we rather abort? I dunno...
+                // For now we will report to stderr and ignore the pattern
                 //
-                eprintln!(
-                    "Warning: Failed to compile vendor pattern '{pattern}': {e}"
-                );
+                eprintln!("Warning: Failed to compile vendor pattern '{pattern}': {e}");
                 None
             }
         })
