@@ -1,9 +1,9 @@
 pub mod definitions;
 pub mod error;
 pub mod indexed;
+pub mod utils;
 
 use linguist_types::{HeuristicRule, Language};
-use regex::Regex;
 use std::path::Path;
 
 pub use error::LinguistError;
@@ -42,32 +42,25 @@ pub type Result<T> = std::result::Result<T, LinguistError>;
 /// # Ok::<(), linguist::LinguistError>(())
 /// ```
 pub fn detect_language_by_extension<P: AsRef<Path>>(
-    filename: P,
+    filepath: P,
 ) -> Result<Vec<(&'static String, &'static Language)>> {
-    let path = filename.as_ref();
-
-    // Get the filename
+    // Get just the filename
     //
-    let filename_str = path
-        .file_name()
-        .ok_or(LinguistError::InvalidPath("Not a filename".to_string()))?
-        .to_str()
-        .ok_or_else(|| LinguistError::InvalidPath(format!("{:?}", path)))?;
+    let filename_str = utils::get_filename_from_path(filepath.as_ref())?;
 
-    // Search through all languages for matching extensions
-    //
+    // Use the extension index for O(1) lookup per extension
     let mut matching_languages = Vec::new();
+    let mut seen_languages = std::collections::HashSet::new();
 
-    // TODO: Super slow. We need to index here.
-    //
-    for entry @ (_, lang) in definitions::LANGUAGES.iter() {
-        if let Some(ref extensions) = lang.extensions {
-            // Check if the filename ends with any of this language's extensions
-            //
-            for ext in extensions {
-                if filename_str.ends_with(ext) {
-                    matching_languages.push(entry);
-                    break; // Don't add the same language multiple times
+    for extension in &utils::extract_extensions(filename_str) {
+        if let Some(language_names) = indexed::LANGUAGES_BY_EXTENSION.get(extension) {
+            for lang_name in language_names {
+                // Avoid adding the same language multiple times (HashSet already prevents
+                // duplicates within an extension, but we need to check across extensions)
+                if seen_languages.insert(lang_name) {
+                    if let Some(lang_def) = definitions::LANGUAGES.get(lang_name) {
+                        matching_languages.push((lang_name, lang_def));
+                    }
                 }
             }
         }
@@ -104,17 +97,11 @@ pub fn detect_language_by_extension<P: AsRef<Path>>(
 /// # Ok::<(), linguist::LinguistError>(())
 /// ```
 pub fn detect_language_by_filename<P: AsRef<Path>>(
-    filename: P,
+    filepath: P,
 ) -> Result<Vec<(&'static String, &'static Language)>> {
-    let path = filename.as_ref();
-
-    // Get the filename
+    // Get just the filename
     //
-    let filename_str = path
-        .file_name()
-        .ok_or(LinguistError::InvalidPath("Not a filename".to_string()))?
-        .to_str()
-        .ok_or_else(|| LinguistError::InvalidPath(format!("{:?}", path)))?;
+    let filename_str = utils::get_filename_from_path(filepath.as_ref())?;
 
     // Use the filename index for O(1) lookup
     //
@@ -134,6 +121,7 @@ pub fn detect_language_by_filename<P: AsRef<Path>>(
 ///
 /// When multiple languages share the same file extension, this function uses
 /// regex-based heuristics to determine the most likely language based on file content.
+/// Uses a pre-built index for O(1) extension lookup performance.
 ///
 /// # Arguments
 ///
@@ -156,41 +144,19 @@ pub fn detect_language_by_filename<P: AsRef<Path>>(
 /// # Ok::<(), linguist::LinguistError>(())
 /// ```
 pub fn disambiguate<P: AsRef<Path>>(
-    filename: P,
+    filepath: P,
     file_contents: &str,
 ) -> Result<Option<Vec<(&'static String, &'static Language)>>> {
-    let path = filename.as_ref();
-
-    // Extract the filename
+    // Get just the filename
     //
-    let filename_str = path
-        .file_name()
-        .ok_or(LinguistError::InvalidPath("Not a filename".to_string()))?
-        .to_str()
-        .ok_or_else(|| LinguistError::InvalidPath(format!("{:?}", path)))?;
+    let filename_str = utils::get_filename_from_path(filepath.as_ref())?;
 
-    // Find the extension(s) - we need to check all possible extensions
-    // e.g., for "file.d.ts", we want to check both ".d.ts" and ".ts"
-    // TODO: I'm not sure this is ideal...
-    let mut extensions = Vec::new();
-    if let Some(dot_pos) = filename_str.find('.') {
-        extensions.push(&filename_str[dot_pos..]);
-
-        // Also add the simple extension
-        if let Some(last_dot_pos) = filename_str.rfind('.') {
-            if last_dot_pos != dot_pos {
-                extensions.push(&filename_str[last_dot_pos..]);
-            }
-        }
-    }
-
-    // Find the disambiguation that matches our extension(s)
-    //
-    for disambiguation in &definitions::HEURISTICS.disambiguations {
-        for ext in &extensions {
-            if disambiguation.extensions.iter().any(|e| e == ext) {
-                // Try each rule
-                //
+    // Look up disambiguations using the index for O(1) performance
+    for extension in &utils::extract_extensions(filename_str) {
+        if let Some(disambiguations) = indexed::DISAMBIGUATIONS_BY_EXTENSION.get(extension) {
+            // Try each disambiguation that applies to this extension
+            for disambiguation in disambiguations {
+                // Try each rule in this disambiguation
                 for rule in &disambiguation.rules {
                     if evaluate_rule(rule, file_contents)? {
                         if let Some(ref lang_names) = rule.language {
@@ -198,7 +164,6 @@ pub fn disambiguate<P: AsRef<Path>>(
                             for lang_name in lang_names {
                                 // If we have a hit - find the language definition by name in the
                                 // LANGUAGES struct
-                                //
                                 if let Some(lang_def) = definitions::LANGUAGES.get(lang_name) {
                                     matching_languages.push((lang_name, lang_def));
                                 }
@@ -207,17 +172,12 @@ pub fn disambiguate<P: AsRef<Path>>(
                         }
                     }
                 }
-
-                // We found the right disambiguation block but no rule matched
-                //
-                return Ok(None);
             }
         }
     }
 
-    // No disambiguation rules found for this extension - this is not an error,
-    // just means the file doesn't need disambiguation
-    //
+    // No disambiguation rules matched - this is not an error,
+    // just means the file doesn't need disambiguation or no rules applied
     Ok(None)
 }
 
@@ -240,7 +200,7 @@ fn evaluate_rule(rule: &HeuristicRule, file_contents: &str) -> Result<bool> {
     if let Some(ref named_pattern) = rule.named_pattern {
         match definitions::HEURISTICS.named_patterns.get(named_pattern) {
             Some(pattern) => {
-                if !matches_pattern(pattern, file_contents)? {
+                if !utils::matches_pattern(pattern, file_contents)? {
                     return Ok(false);
                 }
             }
@@ -253,7 +213,7 @@ fn evaluate_rule(rule: &HeuristicRule, file_contents: &str) -> Result<bool> {
     // Check positive pattern
     //
     if let Some(ref pattern) = rule.pattern {
-        if !matches_pattern(pattern, file_contents)? {
+        if !utils::matches_pattern(pattern, file_contents)? {
             return Ok(false);
         }
     }
@@ -261,7 +221,7 @@ fn evaluate_rule(rule: &HeuristicRule, file_contents: &str) -> Result<bool> {
     // Check negative pattern
     //
     if let Some(ref neg_pattern) = rule.negative_pattern {
-        if matches_pattern(neg_pattern, file_contents)? {
+        if utils::matches_pattern(neg_pattern, file_contents)? {
             return Ok(false);
         }
     }
@@ -269,27 +229,6 @@ fn evaluate_rule(rule: &HeuristicRule, file_contents: &str) -> Result<bool> {
     // Otherwise it's a match!
     //
     Ok(true)
-}
-
-/// Helper function to check if any pattern in a list matches the content
-///
-fn matches_pattern(patterns: &[String], content: &str) -> Result<bool> {
-    for pattern in patterns {
-        match Regex::new(pattern) {
-            Ok(regex) => {
-                if regex.is_match(content) {
-                    return Ok(true);
-                }
-            }
-            Err(e) => {
-                return Err(LinguistError::InvalidRegex {
-                    pattern: pattern.clone(),
-                    error: e.to_string(),
-                });
-            }
-        }
-    }
-    Ok(false)
 }
 
 /// Checks if a file is a vendored/third-party file that should typically be excluded from statistics.
@@ -316,13 +255,15 @@ fn matches_pattern(patterns: &[String], content: &str) -> Result<bool> {
 /// assert!(!is_vendored("src/main.rs")?);
 /// # Ok::<(), linguist::LinguistError>(())
 /// ```
-pub fn is_vendored<P: AsRef<Path>>(filename: P) -> Result<bool> {
-    let path = filename.as_ref();
+pub fn is_vendored<P: AsRef<Path>>(filepath: P) -> Result<bool> {
+    let path = filepath.as_ref();
     let path_str = path
         .to_str()
         .ok_or_else(|| LinguistError::InvalidPath(format!("{:?}", path)))?;
 
-    // Check if the path matches any vendor pattern
+    // Check if the path matches any precompiled vendor pattern
     //
-    matches_pattern(&definitions::VENDOR, path_str)
+    Ok(indexed::VENDOR_PATTERNS
+        .iter()
+        .any(|regex| regex.is_match(path_str)))
 }
