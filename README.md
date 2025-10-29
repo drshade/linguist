@@ -4,12 +4,11 @@ A Rust library for programming language detection, inspired by [GitHub Linguist]
 
 ## Features
 
-- Detect languages by file extension (e.g., `.rs`, `.py`, `.js`)
+- Zero configuration and setup required, just add the crate and call the detection functions 
 - Detect languages by exact filename match (e.g., `Makefile`, `Dockerfile`)
+- Detect languages by file extension (e.g., `.rs`, `.py`, `.js`)
 - Disambiguate between multiple languages using content heuristics
 - Identify vendored/third-party files
-- Static compilation of 789 language definitions
-- Zero runtime dependencies for language data
 
 ## Usage
 

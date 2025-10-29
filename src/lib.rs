@@ -1,5 +1,6 @@
 pub mod definitions;
 pub mod error;
+pub mod indexed;
 
 use linguist_types::{HeuristicRule, Language};
 use regex::Regex;
@@ -115,16 +116,13 @@ pub fn detect_language_by_filename<P: AsRef<Path>>(
         .to_str()
         .ok_or_else(|| LinguistError::InvalidPath(format!("{:?}", path)))?;
 
-    // Search through all languages for matching filenames
+    // Use the filename index for O(1) lookup
     //
     let mut matching_languages = Vec::new();
-
-    // TODO: Super slow. Need to index.
-    //
-    for entry @ (_, lang) in definitions::LANGUAGES.iter() {
-        if let Some(ref filenames) = lang.filenames {
-            if filenames.iter().any(|f| f == filename_str) {
-                matching_languages.push(entry);
+    if let Some(language_names) = indexed::LANGUAGES_BY_FILENAME.get(filename_str) {
+        for lang_name in language_names {
+            if let Some(lang_def) = definitions::LANGUAGES.get(lang_name) {
+                matching_languages.push((lang_name, lang_def));
             }
         }
     }
