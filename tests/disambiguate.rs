@@ -204,4 +204,50 @@ struct Point {
 "#;
         assert_disambiguates("main.rs", rust_content, "Rust");
     }
+
+    #[test]
+    fn detect_csharp_vs_smalltalk() {
+        // .cs files are ambiguous between C# and Smalltalk
+        // C# code with using statements and namespace should be detected as C#
+        let csharp_content = r#"using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using cicada.common.Framework;
+
+namespace cicada.data.Models {
+        public class UnigroAccountCreationAudits {
+                public Guid AuditID { get; set; }
+                public string BpNumber { get; set; }
+                public string Status { get; set; }
+                public string AccountType { get; set; }
+                public string FailureReason { get; set; }
+                public List<string> Logs { get; set; }
+                public DateTime AuditDate { get; set; }
+                public List<string> Declarations { get; set; }
+                public bool IsBusiness { get; set; }
+        }
+}
+"#;
+        assert_disambiguates("test.cs", csharp_content, "C#");
+    }
+
+    #[test]
+    fn detect_csharp_with_bom() {
+        // .cs files with UTF-8 BOM (common in Visual Studio files)
+        // The BOM should be handled transparently during disambiguation
+        let csharp_content_with_bom = "\u{FEFF}using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace TestProject {
+    public class TestClass {
+        public string Name { get; set; }
+        public int Value { get; set; }
+    }
+}
+";
+        assert_disambiguates("test.cs", csharp_content_with_bom, "C#");
+    }
 }

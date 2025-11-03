@@ -148,6 +148,9 @@ pub fn detect_language_by_filename<P: AsRef<Path>>(filepath: P) -> Result<Vec<De
 /// regex-based heuristics to determine the most likely language based on file content.
 /// Uses a pre-built index for O(1) extension lookup performance.
 ///
+/// Automatically handles UTF-8 BOM (Byte Order Mark) if present at the beginning
+/// of the file content, which is common in files created by Windows/Visual Studio.
+///
 /// # Arguments
 ///
 /// * `filename` - Path or filename to check (used to extract extension)
@@ -176,6 +179,13 @@ pub fn disambiguate<P: AsRef<Path>>(
     //
     let filename_str = utils::get_filename_from_path(filepath.as_ref())?;
 
+    // Strip UTF-8 BOM if present (common in Windows/Visual Studio files)
+    let content = if file_contents.starts_with('\u{FEFF}') {
+        &file_contents[3..]
+    } else {
+        file_contents
+    };
+
     // Look up disambiguations using the index for O(1) performance
     for extension in &utils::extract_extensions(filename_str) {
         if let Some(disambiguations) = indexed::DISAMBIGUATIONS_BY_EXTENSION.get(extension) {
@@ -183,7 +193,7 @@ pub fn disambiguate<P: AsRef<Path>>(
             for disambiguation in disambiguations {
                 // Try each rule in this disambiguation
                 for rule in &disambiguation.rules {
-                    if evaluate_rule(rule, file_contents)?
+                    if evaluate_rule(rule, content)?
                         && let Some(ref lang_names) = rule.language
                     {
                         let mut matching_languages = Vec::new();
