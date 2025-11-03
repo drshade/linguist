@@ -68,7 +68,7 @@ fn process_file(
                 found_any = true;
                 let names: Vec<&str> = languages.iter().map(|l| l.name).collect();
                 println!(
-                    "{}: {} (by filename) [{}]",
+                    "{}: {} (by filename) {}",
                     filepath,
                     names.join(", "),
                     vendored_status
@@ -91,7 +91,7 @@ fn process_file(
                         found_any = true;
                         let names: Vec<&str> = languages.iter().map(|l| l.name).collect();
                         println!(
-                            "{}: {} (by content) [{}]",
+                            "{}: {} (by content) {}",
                             filepath,
                             names.join(", "),
                             vendored_status
@@ -112,7 +112,7 @@ fn process_file(
 
     // If no language was detected by any method, report as unknown
     if !found_any {
-        println!("{}: Unknown [{}]", filepath, vendored_status);
+        println!("{}: Unknown {}", filepath, vendored_status);
     }
 
     Ok(())
