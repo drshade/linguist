@@ -250,4 +250,59 @@ namespace TestProject {
 ";
         assert_disambiguates("test.cs", csharp_content_with_bom, "C#");
     }
+
+    #[test]
+    fn detect_csharp_with_lowercase_namespace() {
+        // .cs files with lowercase namespace imports (common in modern C# projects)
+        // The pattern should match using statements that start with lowercase letters
+        let csharp_content_lowercase = "using cicada.common.Framework;
+using cicada.data.Context;
+using System;
+using System.Collections.Generic;
+
+namespace cicada.data.Repository
+{
+    public interface IRepository
+    {
+        void DoSomething();
+    }
+}
+";
+        assert_disambiguates("test.cs", csharp_content_lowercase, "C#");
+    }
+
+    #[test]
+    fn detect_csharp_with_large_comment_block() {
+        // Test C# file that starts with a large comment block but has using statements later
+        // This tests the behavior you were concerned about - the ^ in regex patterns
+        // matches start of any line, not just start of file, so this should still work
+        let content = r#"/*
+ * This is a large comment block at the top of a C# file
+ * It could be a copyright notice, license, or just general comments
+ * 
+ * Copyright (c) 2023 Some Company
+ * All rights reserved.
+ * 
+ * This file contains important business logic for our application
+ * and is part of our core framework.
+ * 
+ * More comments here...
+ * Even more comments...
+ * 
+ * We might have many lines before any actual C# code appears
+ */
+
+using System;
+using System.Collections.Generic;
+using cicada.common.Framework;
+
+namespace MyApp.Business
+{
+    public class SomeClass
+    {
+        // Implementation here
+    }
+}"#;
+        assert_disambiguates("test.cs", content, "C#");
+    }
 }

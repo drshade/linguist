@@ -1,5 +1,4 @@
 use crate::error::LinguistError;
-use regex::Regex;
 use std::path::Path;
 
 /// Type alias for Results in this crate
@@ -88,10 +87,13 @@ pub fn extract_extensions(filename: &str) -> Vec<String> {
 /// ```
 pub fn matches_pattern(patterns: &[String], content: &str) -> Result<bool> {
     for pattern in patterns {
-        let regex = Regex::new(pattern).map_err(|e| LinguistError::InvalidRegex {
-            pattern: pattern.clone(),
-            error: e.to_string(),
-        })?;
+        let regex = regex::RegexBuilder::new(pattern)
+            .multi_line(true) // Enable multiline mode so ^ matches start of any line
+            .build()
+            .map_err(|e| LinguistError::InvalidRegex {
+                pattern: pattern.clone(),
+                error: e.to_string(),
+            })?;
 
         if regex.is_match(content) {
             return Ok(true);
