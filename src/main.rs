@@ -1,55 +1,118 @@
+mod cli;
+
+use clap::Parser;
+use cli::{Cli, DetectionMethods};
 use linguist::{
     detect_language_by_extension, detect_language_by_filename, disambiguate, is_vendored,
 };
+use std::process;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Take filename as argument
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() < 2 {
-        eprintln!("Usage: {} <filename>", args[0]);
-        std::process::exit(1);
-    }
-    let filename = &args[1];
+fn main() {
+    let cli = Cli::parse();
+    let methods = cli.detection_methods();
 
-    // Is it vendored?
-    match is_vendored(filename) {
-        Ok(true) => println!("{filename} -> is vendored"),
-        Ok(false) => println!("{filename} -> is not vendored"),
-        Err(e) => eprintln!("Error checking if vendored: {e}"),
-    }
+    let mut any_success = false;
+    let mut any_error = false;
 
-    // By filename
-    match detect_language_by_filename(filename) {
-        Ok(languages) => {
-            for lang in languages {
-                println!("{} -> {} (by filename)", filename, lang.name);
+    for filepath in &cli.files {
+        match process_file(filepath, methods) {
+            Ok(()) => any_success = true,
+            Err(e) => {
+                eprintln!("Error processing {}: {}", filepath, e);
+                any_error = true;
             }
         }
-        Err(e) => eprintln!("Error detecting by filename: {e}"),
     }
 
-    // By extension
-    match detect_language_by_extension(filename) {
-        Ok(languages) => {
-            for lang in languages {
-                println!("{} -> {} (by extension)", filename, lang.name);
+    // Exit with error code if all files failed
+    if !any_success && any_error {
+        process::exit(1);
+    }
+}
+
+fn process_file(
+    filepath: &str,
+    methods: DetectionMethods,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Always check if vendored
+    let vendored = is_vendored(filepath).unwrap_or(false);
+    let vendored_status = if vendored { "[vendored]" } else { "" };
+
+    let mut found_any = false;
+
+    // Detect by extension
+    if methods.by_extension {
+        match detect_language_by_extension(filepath) {
+            Ok(languages) if !languages.is_empty() => {
+                found_any = true;
+                let names: Vec<&str> = languages.iter().map(|l| l.name).collect();
+                println!(
+                    "{}: {} (by extension) {}",
+                    filepath,
+                    names.join(", "),
+                    vendored_status
+                );
             }
+            Ok(_) => {} // No matches, that's ok
+            Err(e) => eprintln!(
+                "Warning: Error detecting by extension for {}: {}",
+                filepath, e
+            ),
         }
-        Err(e) => eprintln!("Error detecting by extension: {e}"),
     }
 
-    // Disambiguate
-    if let Ok(content) = std::fs::read_to_string(filename) {
-        match disambiguate(filename, &content) {
-            Ok(languages) => {
-                for lang in languages {
-                    println!("{} -> {} (by disambiguation)", filename, lang.name);
+    // Detect by filename
+    if methods.by_filename {
+        match detect_language_by_filename(filepath) {
+            Ok(languages) if !languages.is_empty() => {
+                found_any = true;
+                let names: Vec<&str> = languages.iter().map(|l| l.name).collect();
+                println!(
+                    "{}: {} (by filename) [{}]",
+                    filepath,
+                    names.join(", "),
+                    vendored_status
+                );
+            }
+            Ok(_) => {} // No matches, that's ok
+            Err(e) => eprintln!(
+                "Warning: Error detecting by filename for {}: {}",
+                filepath, e
+            ),
+        }
+    }
+
+    // Detect by content
+    if methods.by_content {
+        match std::fs::read_to_string(filepath) {
+            Ok(content) => {
+                match disambiguate(filepath, &content) {
+                    Ok(languages) if !languages.is_empty() => {
+                        found_any = true;
+                        let names: Vec<&str> = languages.iter().map(|l| l.name).collect();
+                        println!(
+                            "{}: {} (by content) [{}]",
+                            filepath,
+                            names.join(", "),
+                            vendored_status
+                        );
+                    }
+                    Ok(_) => {} // No matches, that's ok
+                    Err(e) => eprintln!(
+                        "Warning: Error during disambiguation for {}: {}",
+                        filepath, e
+                    ),
                 }
             }
-            Err(e) => eprintln!("Error during disambiguation: {e}"),
+            Err(e) => {
+                eprintln!("Warning: Failed to read file {}: {}", filepath, e);
+            }
         }
-    } else {
-        eprintln!("Failed to read file: {filename}");
+    }
+
+    // If no language was detected by any method, report as unknown
+    if !found_any {
+        println!("{}: Unknown [{}]", filepath, vendored_status);
     }
 
     Ok(())
