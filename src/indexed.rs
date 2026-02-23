@@ -2,7 +2,7 @@ use crate::definitions;
 use linguist_types::Disambiguation;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 
 //
 // Indexed structures for faster lookups etc
@@ -12,7 +12,7 @@ pub type Filename = String;
 pub type Extension = String;
 pub type LanguageName = String;
 
-pub static LANGUAGES_BY_FILENAME: Lazy<HashMap<Filename, HashSet<LanguageName>>> =
+pub static LANGUAGES_BY_FILENAME: Lazy<HashMap<Filename, BTreeSet<LanguageName>>> =
     Lazy::new(|| {
         // Process the LANGUAGES struct, building up the index
         //
@@ -23,7 +23,7 @@ pub static LANGUAGES_BY_FILENAME: Lazy<HashMap<Filename, HashSet<LanguageName>>>
                 for filename in filenames {
                     index
                         .entry(filename.clone())
-                        .or_insert_with(HashSet::new)
+                        .or_insert_with(BTreeSet::new)
                         .insert(lang_name.clone());
                 }
             }
@@ -32,7 +32,7 @@ pub static LANGUAGES_BY_FILENAME: Lazy<HashMap<Filename, HashSet<LanguageName>>>
         index
     });
 
-pub static LANGUAGES_BY_EXTENSION: Lazy<HashMap<Extension, HashSet<LanguageName>>> =
+pub static LANGUAGES_BY_EXTENSION: Lazy<HashMap<Extension, BTreeSet<LanguageName>>> =
     Lazy::new(|| {
         // Process the LANGUAGES struct, building up the index
         //
@@ -43,7 +43,7 @@ pub static LANGUAGES_BY_EXTENSION: Lazy<HashMap<Extension, HashSet<LanguageName>
                 for extension in extensions {
                     index
                         .entry(extension.clone())
-                        .or_insert_with(HashSet::new)
+                        .or_insert_with(BTreeSet::new)
                         .insert(lang_name.clone());
                 }
             }
