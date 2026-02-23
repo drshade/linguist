@@ -303,5 +303,5 @@ pub fn is_vendored<P: AsRef<Path>>(filepath: P) -> Result<bool> {
     //
     Ok(indexed::VENDOR_PATTERNS
         .iter()
-        .any(|regex| regex.is_match(path_str)))
+        .any(|regex| regex.is_match(path_str).unwrap_or(false)))
 }

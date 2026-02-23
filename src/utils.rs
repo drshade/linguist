@@ -87,15 +87,15 @@ pub fn extract_extensions(filename: &str) -> Vec<String> {
 /// ```
 pub fn matches_pattern(patterns: &[String], content: &str) -> Result<bool> {
     for pattern in patterns {
-        let regex = match regex::RegexBuilder::new(pattern)
+        let regex = fancy_regex::RegexBuilder::new(pattern)
             .multi_line(true)
             .build()
-        {
-            Ok(r) => r,
-            Err(_) => continue,
-        };
+            .map_err(|e| LinguistError::InvalidRegex {
+                pattern: pattern.clone(),
+                error: e.to_string(),
+            })?;
 
-        if regex.is_match(content) {
+        if regex.is_match(content).unwrap_or(false) {
             return Ok(true);
         }
     }

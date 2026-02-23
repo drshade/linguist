@@ -1,7 +1,7 @@
 use crate::definitions;
 use linguist_types::Disambiguation;
 use once_cell::sync::Lazy;
-use regex::Regex;
+use fancy_regex::Regex;
 use std::collections::{BTreeSet, HashMap};
 
 //

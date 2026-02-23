@@ -977,7 +977,7 @@ disambiguations:
     pattern: |-
       (?x)\A
       \[
-      (?<version>
+      (?:
         (?:
           [Aa]d[Bb]lock
           (?:[ \t][Pp]lus)?
@@ -991,7 +991,16 @@ disambiguations:
       )
       (?:
         [ \t]?;[ \t]?
-        \g<version>
+        (?:
+          [Aa]d[Bb]lock
+          (?:[ \t][Pp]lus)?
+          |
+          u[Bb]lock
+          (?:[ \t][Oo]rigin)?
+          |
+          [Aa]d[Gg]uard
+        )
+        (?:[ \t] \d+(?:\.\d+)*+)?
       )*+
       \]
     # HACK: This is a contrived use of heuristics needed to address
