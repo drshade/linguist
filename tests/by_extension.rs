@@ -114,6 +114,24 @@ mod test_detection_by_extension {
     }
 
     #[test]
+    fn txt_extension_is_deterministic() {
+        // .txt matches multiple languages (Adblock Filter List, Text, Vim Help File).
+        // With BTreeSet, order is always alphabetical. With HashSet, order varies
+        // per process due to random hash seeds — run this test in a shell loop
+        // across multiple processes to catch non-determinism.
+        let names: Vec<&str> = detect_language_by_extension("test.txt")
+            .unwrap()
+            .iter()
+            .map(|l| l.name)
+            .collect();
+        assert_eq!(
+            names,
+            vec!["Adblock Filter List", "Text", "Vim Help File"],
+            "languages should be in alphabetical order"
+        );
+    }
+
+    #[test]
     fn returns_language_objects() {
         // Verify we get full Language objects with metadata
         let langs = detect_language_by_extension("script.py").expect("Should not error");
