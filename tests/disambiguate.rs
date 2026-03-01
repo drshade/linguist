@@ -303,6 +303,27 @@ namespace cicada.data.Repository
     }
 
     #[test]
+    fn txt_hosts_file_resolves_to_hosts_file() {
+        // Hosts file pattern uses a negative lookbehind (?<!-) and possessive
+        // quantifier )*+ — both handled by fancy-regex.
+        assert_disambiguates(
+            "hosts.txt",
+            "127.0.0.1 localhost\n192.168.1.1 router.local\n0.0.0.0 ads.example.com\n",
+            "Hosts File",
+        );
+    }
+
+    #[test]
+    fn tpl_smarty_resolves_to_smarty() {
+        // Smarty pattern uses a negative lookbehind (?<!\{) — handled by fancy-regex.
+        assert_disambiguates(
+            "template.tpl",
+            "{* Smarty comment *}\n<h1>{$title}</h1>\n{foreach $items as $item}<p>{$item}</p>{/foreach}\n",
+            "Smarty",
+        );
+    }
+
+    #[test]
     fn detect_csharp_with_large_comment_block() {
         // Test C# file that starts with a large comment block but has using statements later
         // This tests the behavior you were concerned about - the ^ in regex patterns

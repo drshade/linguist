@@ -1,0 +1,29 @@
+--- heuristics_original.yml
++++ heuristics.yml
+@@ -977,7 +977,7 @@
+     pattern: |-
+       (?x)\A
+       \[
+-      (?<version>
++      (?:
+         (?:
+           [Aa]d[Bb]lock
+           (?:[ \t][Pp]lus)?
+@@ -991,7 +991,16 @@
+       )
+       (?:
+         [ \t]?;[ \t]?
+-        \g<version>
++        (?:
++          [Aa]d[Bb]lock
++          (?:[ \t][Pp]lus)?
++          |
++          u[Bb]lock
++          (?:[ \t][Oo]rigin)?
++          |
++          [Aa]d[Gg]uard
++        )
++        (?:[ \t] \d+(?:\.\d+)*+)?
+       )*+
+       \]
+     # HACK: This is a contrived use of heuristics needed to address
