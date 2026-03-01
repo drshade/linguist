@@ -69,28 +69,30 @@ pub fn detect_language_by_extension<P: AsRef<Path>>(filepath: P) -> Result<Vec<D
     //
     let filename_str = utils::get_filename_from_path(filepath.as_ref())?;
 
-    // Use the extension index for O(1) lookup per extension
-    let mut matching_languages = Vec::new();
-    let mut seen_languages = std::collections::HashSet::new();
-
-    for extension in &utils::extract_extensions(filename_str) {
+    // Try extensions from most specific (longest) to least specific (shortest),
+    // returning as soon as any extension has matches. This ensures compound
+    // extensions like `.antlers.html` take precedence over their simpler suffix
+    // `.html`, preventing the more specific language from being lost during
+    // subsequent disambiguation.
+    let extensions = utils::extract_extensions(filename_str);
+    for extension in extensions.iter().rev() {
         if let Some(language_names) = indexed::LANGUAGES_BY_EXTENSION.get(extension) {
-            for lang_name in language_names {
-                // Avoid adding the same language multiple times (HashSet already prevents
-                // duplicates within an extension, but we need to check across extensions)
-                if seen_languages.insert(lang_name)
-                    && let Some(lang_def) = definitions::LANGUAGES.get(lang_name)
-                {
-                    matching_languages.push(DetectedLanguage {
+            let matching_languages: Vec<DetectedLanguage> = language_names
+                .iter()
+                .filter_map(|lang_name| {
+                    definitions::LANGUAGES.get(lang_name).map(|lang_def| DetectedLanguage {
                         name: lang_name.as_str(),
                         definition: lang_def,
-                    });
-                }
+                    })
+                })
+                .collect();
+            if !matching_languages.is_empty() {
+                return Ok(matching_languages);
             }
         }
     }
 
-    Ok(matching_languages)
+    Ok(vec![])
 }
 
 /// Detects programming language(s) by exact filename match.
