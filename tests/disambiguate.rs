@@ -272,6 +272,37 @@ namespace cicada.data.Repository
     }
 
     #[test]
+    fn txt_plain_text_resolves_to_text() {
+        // .txt is ambiguous (Adblock Filter List, Text, Vim Help File).
+        // Plain English content should fall through all specific rules
+        // and hit the catch-all "Text" rule.
+        assert_disambiguates(
+            "notes.txt",
+            "The quick brown fox jumps over the lazy dog.",
+            "Text",
+        );
+    }
+
+    #[test]
+    fn txt_adblock_content_resolves_to_adblock() {
+        assert_disambiguates(
+            "filters.txt",
+            "[Adblock Plus 2.0]\n||example.com^\n@@||example.org^\n",
+            "Adblock Filter List",
+        );
+    }
+
+    #[test]
+    fn txt_vim_help_resolves_to_vim_help_file() {
+        // Content with a vim modeline specifying filetype=help
+        assert_disambiguates(
+            "help.txt",
+            "Some help text\n vim:tw=78:ts=8:ft=help:norl:\n",
+            "Vim Help File",
+        );
+    }
+
+    #[test]
     fn detect_csharp_with_large_comment_block() {
         // Test C# file that starts with a large comment block but has using statements later
         // This tests the behavior you were concerned about - the ^ in regex patterns
