@@ -4551,6 +4551,12 @@ Mako:
   tm_scope: text.html.mako
   ace_mode: text
   language_id: 221
+Markaby:
+  type: markup
+  extensions:
+  - ".mab"
+  tm_scope: none
+  ace_mode: text
 Markdown:
   type: prose
   color: "#083fa1"
