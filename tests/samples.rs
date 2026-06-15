@@ -9,6 +9,7 @@ mod test_samples {
     fn canonical_language_name(folder_name: &str) -> &str {
         match folder_name {
             "Fstar" => "F*",
+            "ProC" => "Pro*C",
             other => other,
         }
     }

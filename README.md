@@ -56,3 +56,7 @@ assert!(!is_vendored("src/main.rs")?);
 Special thanks to [@vcfxb](https://github.com/vcfxb) for graciously donating the crates.io name "linguist" to this project!
 
 This project is inspired by and uses language definitions from [GitHub Linguist](https://github.com/github/linguist), maintained by GitHub and its contributors. The language definitions (`definitions/languages.yml`, `definitions/heuristics.yml`, `definitions/vendor.yml`) are derived from this project.
+
+## Maintaining
+
+See [MAINTAINING.md](MAINTAINING.md) for how to sync definitions and test samples with upstream github-linguist.
