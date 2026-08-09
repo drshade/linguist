@@ -1,8 +1,8 @@
 use crate::definitions;
 use linguist_types::Disambiguation;
-use once_cell::sync::Lazy;
 use fancy_regex::Regex;
 use std::collections::{BTreeSet, HashMap};
+use std::sync::LazyLock;
 
 //
 // Indexed structures for faster lookups etc
@@ -12,8 +12,8 @@ pub type Filename = String;
 pub type Extension = String;
 pub type LanguageName = String;
 
-pub static LANGUAGES_BY_FILENAME: Lazy<HashMap<Filename, BTreeSet<LanguageName>>> =
-    Lazy::new(|| {
+pub static LANGUAGES_BY_FILENAME: LazyLock<HashMap<Filename, BTreeSet<LanguageName>>> =
+    LazyLock::new(|| {
         // Process the LANGUAGES struct, building up the index
         //
         let mut index = HashMap::new();
@@ -32,8 +32,8 @@ pub static LANGUAGES_BY_FILENAME: Lazy<HashMap<Filename, BTreeSet<LanguageName>>
         index
     });
 
-pub static LANGUAGES_BY_EXTENSION: Lazy<HashMap<Extension, BTreeSet<LanguageName>>> =
-    Lazy::new(|| {
+pub static LANGUAGES_BY_EXTENSION: LazyLock<HashMap<Extension, BTreeSet<LanguageName>>> =
+    LazyLock::new(|| {
         // Process the LANGUAGES struct, building up the index
         //
         let mut index = HashMap::new();
@@ -52,8 +52,8 @@ pub static LANGUAGES_BY_EXTENSION: Lazy<HashMap<Extension, BTreeSet<LanguageName
         index
     });
 
-pub static DISAMBIGUATIONS_BY_EXTENSION: Lazy<HashMap<Extension, Vec<Disambiguation>>> =
-    Lazy::new(|| {
+pub static DISAMBIGUATIONS_BY_EXTENSION: LazyLock<HashMap<Extension, Vec<Disambiguation>>> =
+    LazyLock::new(|| {
         // Process the HEURISTICS struct, building up the index
         //
         let mut index = HashMap::new();
@@ -70,7 +70,7 @@ pub static DISAMBIGUATIONS_BY_EXTENSION: Lazy<HashMap<Extension, Vec<Disambiguat
         index
     });
 
-pub static VENDOR_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
+pub static VENDOR_PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
     // Precompile all vendor regex patterns
     //
     definitions::VENDOR
