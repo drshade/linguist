@@ -23,7 +23,7 @@ linguist-types = { path = "linguist-types", version = "0.1" }
 serde = { version = "1", features = ["derive"] }
 serde_yaml_ng = "0.10"
 serde_json = "1"
-fancy-regex = "0.17"
+fancy-regex = "0.19"
 clap = { version = "4", features = ["derive"], optional = true }
 
 [features]
