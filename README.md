@@ -51,6 +51,15 @@ assert!(is_vendored("node_modules/react/index.js")?);
 assert!(!is_vendored("src/main.rs")?);
 ```
 
+## Command-line tool
+
+A small CLI is included behind the optional `cli` feature (so library users don't pull in its dependencies):
+
+```bash
+cargo install linguist --features cli
+linguist src/main.rs Makefile script.py
+```
+
 ## Acknowledgments
 
 Special thanks to [@vcfxb](https://github.com/vcfxb) for graciously donating the crates.io name "linguist" to this project!
