@@ -13,7 +13,7 @@ jobs:
     name: Test, clippy, fmt (stable)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -35,7 +35,7 @@ jobs:
     name: MSRV (rust-version in Cargo.toml)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Read MSRV from Cargo.toml
         id: msrv
         run: echo "version=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | select(.name == "linguist") | .rust_version')" >> "$GITHUB_OUTPUT"
