@@ -182,11 +182,7 @@ pub fn disambiguate<P: AsRef<Path>>(
     let filename_str = utils::get_filename_from_path(filepath.as_ref())?;
 
     // Strip UTF-8 BOM if present (common in Windows/Visual Studio files)
-    let content = if file_contents.starts_with('\u{FEFF}') {
-        &file_contents[3..]
-    } else {
-        file_contents
-    };
+    let content = file_contents.strip_prefix('\u{FEFF}').unwrap_or(file_contents);
 
     // Look up disambiguations using the index for O(1) performance
     for extension in &utils::extract_extensions(filename_str) {
