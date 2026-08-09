@@ -4,6 +4,9 @@ Rust library (+ optional CLI) for programming language detection, vendoring
 definitions from upstream [github-linguist](https://github.com/github-linguist/linguist).
 Process docs (syncing, releasing) live in [MAINTAINING.md](MAINTAINING.md).
 
+**Contributing a change?** Read [CONTRIBUTING.md](CONTRIBUTING.md) first —
+it determines whether your change even belongs in this repo.
+
 ## Building and testing
 
 ```bash
@@ -39,17 +42,19 @@ Hand edits will be silently overwritten by the next sync.
 
 Agents are welcome — encouraged — to write and maintain code here: edit
 files, run tests, refactor, prepare everything. But actions that mutate
-shared or published state are the maintainer's to take, because they carry
-the accountability for them:
+shared or published state belong to the human owning the work, because they
+carry the accountability for them:
 
 - `git commit`, `git push`, creating or deleting branches and tags
 - merging/accepting PRs (including Dependabot and sync-workflow PRs)
 - publishing (`cargo publish`) or anything else that leaves the machine
 
 Work to a finished, verified state in the working tree, then report what's
-ready and suggest commit boundaries — and stop there. Exception: the
-repository's own automation (the sync workflow opening its weekly PR) is
-sanctioned; a human still merges it.
+ready and suggest commit boundaries — and stop there. If you're assisting a
+contributor, the same rule applies in their fork: your human reviews, owns
+the commits, and opens the PR. Exception: the repository's own automation
+(the sync workflow opening its weekly PR) is sanctioned; a human still
+merges it.
 
 ## Workspace and releases
 
