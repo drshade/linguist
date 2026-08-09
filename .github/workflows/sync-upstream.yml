@@ -42,7 +42,7 @@ jobs:
           echo "version=$NEW" >> "$GITHUB_OUTPUT"
       - name: Open pull request
         if: steps.diff.outputs.changed != '0'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: auto/sync-upstream-definitions
           commit-message: "sync: upstream github-linguist definitions (v${{ steps.bump.outputs.version }})"
