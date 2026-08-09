@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test, clippy, fmt (stable)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Formatting
+        run: cargo fmt --all --check
+      - name: Clippy (library only)
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Clippy (with cli feature)
+        run: cargo clippy --all-targets --features cli -- -D warnings
+      - name: Fetch test samples (pinned to definitions/UPSTREAM_COMMIT)
+        run: bash tests/pull-samples.sh
+      - name: Test (library only)
+        run: cargo test
+      - name: Test (with cli feature)
+        run: cargo test --features cli
+
+  msrv:
+    name: MSRV (rust-version in Cargo.toml)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read MSRV from Cargo.toml
+        id: msrv
+        run: echo "version=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | select(.name == "linguist") | .rust_version')" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Check on MSRV toolchain
+        run: cargo check --all-targets --features cli

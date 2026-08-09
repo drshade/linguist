@@ -1,0 +1,65 @@
+name: Sync upstream definitions
+
+on:
+  schedule:
+    # Mondays 06:00 UTC
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Pull upstream definitions
+        run: bash definitions/pull-new.sh
+      - name: Check for definition changes
+        id: diff
+        run: echo "changed=$(git status --porcelain definitions/ | wc -l)" >> "$GITHUB_OUTPUT"
+      - name: Fetch matching test samples
+        if: steps.diff.outputs.changed != '0'
+        run: bash tests/pull-samples.sh
+      - name: Test against new definitions
+        if: steps.diff.outputs.changed != '0'
+        run: cargo test
+      - name: Bump patch version
+        id: bump
+        if: steps.diff.outputs.changed != '0'
+        run: |
+          CURRENT=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | select(.name == "linguist") | .version')
+          NEW=$(echo "$CURRENT" | awk -F. '{printf "%d.%d.%d", $1, $2, $3 + 1}')
+          sed -i "0,/^version = \"$CURRENT\"/s//version = \"$NEW\"/" Cargo.toml
+          cargo update --workspace
+          echo "version=$NEW" >> "$GITHUB_OUTPUT"
+      - name: Open pull request
+        if: steps.diff.outputs.changed != '0'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: auto/sync-upstream-definitions
+          commit-message: "sync: upstream github-linguist definitions (v${{ steps.bump.outputs.version }})"
+          title: "sync: upstream github-linguist definitions (v${{ steps.bump.outputs.version }})"
+          body: |
+            Automated weekly sync of `definitions/*.yml` (and the pinned
+            `definitions/UPSTREAM_COMMIT`) from github-linguist/linguist,
+            with the patch version bumped to ${{ steps.bump.outputs.version }}.
+
+            Tests passed against the new definitions with the matching samples
+            snapshot in this workflow run (the bump only happens after a green
+            test run).
+
+            After merging, release with:
+
+                git pull && git tag v${{ steps.bump.outputs.version }} && git push origin --tags
+
+            Note: CI does not run automatically on PRs opened by a workflow's
+            `GITHUB_TOKEN` — close and reopen this PR (or push to the branch)
+            to trigger it if you want a CI run before merging.
