@@ -39,8 +39,7 @@ mod test_samples {
             _ => {
                 // Ambiguous extension — try content-based disambiguation
                 let content = fs::read_to_string(path).unwrap_or_default();
-                let disambiguated =
-                    to_names(disambiguate(path, &content).unwrap_or_default());
+                let disambiguated = to_names(disambiguate(path, &content).unwrap_or_default());
                 if disambiguated.is_empty() {
                     by_ext
                 } else {
@@ -99,14 +98,30 @@ mod test_samples {
 
                         for fname_entry in filenames {
                             let fname_path = fname_entry.path();
-                            check(expected, &fname_path, true, &mut passed, &mut failed, &mut skipped, &mut failures);
+                            check(
+                                expected,
+                                &fname_path,
+                                true,
+                                &mut passed,
+                                &mut failed,
+                                &mut skipped,
+                                &mut failures,
+                            );
                         }
                     }
                     continue;
                 }
 
                 if path.is_file() {
-                    check(expected, &path, false, &mut passed, &mut failed, &mut skipped, &mut failures);
+                    check(
+                        expected,
+                        &path,
+                        false,
+                        &mut passed,
+                        &mut failed,
+                        &mut skipped,
+                        &mut failures,
+                    );
                 }
             }
         }
@@ -148,6 +163,4 @@ mod test_samples {
             ));
         }
     }
-
-
 }

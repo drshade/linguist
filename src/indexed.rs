@@ -1,6 +1,6 @@
 use crate::definitions;
-use linguist_types::Disambiguation;
 use fancy_regex::Regex;
+use linguist_types::Disambiguation;
 use std::collections::{BTreeSet, HashMap};
 use std::sync::LazyLock;
 

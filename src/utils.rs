@@ -87,16 +87,20 @@ pub fn extract_extensions(filename: &str) -> Vec<String> {
 /// ```
 pub fn matches_pattern(patterns: &[String], content: &str) -> Result<bool> {
     for pattern in patterns {
-        let regex = fancy_regex::Regex::new(&format!("(?m){pattern}"))
+        let regex = fancy_regex::Regex::new(&format!("(?m){pattern}")).map_err(|e| {
+            LinguistError::InvalidRegex {
+                pattern: pattern.clone(),
+                error: e.to_string(),
+            }
+        })?;
+
+        if regex
+            .is_match(content)
             .map_err(|e| LinguistError::InvalidRegex {
                 pattern: pattern.clone(),
                 error: e.to_string(),
-            })?;
-
-        if regex.is_match(content).map_err(|e| LinguistError::InvalidRegex {
-            pattern: pattern.clone(),
-            error: e.to_string(),
-        })? {
+            })?
+        {
             return Ok(true);
         }
     }

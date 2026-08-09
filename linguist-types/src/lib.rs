@@ -90,11 +90,13 @@ where
         Multiple(Vec<String>),
     }
 
-    Ok(Some(match Option::<StringOrVec>::deserialize(deserializer)? {
-        None => return Ok(None),
-        Some(StringOrVec::Single(s)) => vec![s],
-        Some(StringOrVec::Multiple(v)) => v,
-    }))
+    Ok(Some(
+        match Option::<StringOrVec>::deserialize(deserializer)? {
+            None => return Ok(None),
+            Some(StringOrVec::Single(s)) => vec![s],
+            Some(StringOrVec::Multiple(v)) => v,
+        },
+    ))
 }
 
 /// Custom deserializer for HashMap<String, Vec<String>> where values can be single strings or arrays

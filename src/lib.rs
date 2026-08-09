@@ -80,10 +80,12 @@ pub fn detect_language_by_extension<P: AsRef<Path>>(filepath: P) -> Result<Vec<D
             let matching_languages: Vec<DetectedLanguage> = language_names
                 .iter()
                 .filter_map(|lang_name| {
-                    definitions::LANGUAGES.get(lang_name).map(|lang_def| DetectedLanguage {
-                        name: lang_name.as_str(),
-                        definition: lang_def,
-                    })
+                    definitions::LANGUAGES
+                        .get(lang_name)
+                        .map(|lang_def| DetectedLanguage {
+                            name: lang_name.as_str(),
+                            definition: lang_def,
+                        })
                 })
                 .collect();
             if !matching_languages.is_empty() {
@@ -182,7 +184,9 @@ pub fn disambiguate<P: AsRef<Path>>(
     let filename_str = utils::get_filename_from_path(filepath.as_ref())?;
 
     // Strip UTF-8 BOM if present (common in Windows/Visual Studio files)
-    let content = file_contents.strip_prefix('\u{FEFF}').unwrap_or(file_contents);
+    let content = file_contents
+        .strip_prefix('\u{FEFF}')
+        .unwrap_or(file_contents);
 
     // Look up disambiguations using the index for O(1) performance
     for extension in &utils::extract_extensions(filename_str) {
