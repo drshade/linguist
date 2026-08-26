@@ -1,5 +1,8 @@
 use std::fmt;
 
+/// Type alias for Results in this crate
+pub type Result<T> = std::result::Result<T, LinguistError>;
+
 /// Errors that can occur during language detection
 #[derive(Debug, Clone, PartialEq)]
 pub enum LinguistError {

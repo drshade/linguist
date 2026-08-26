@@ -17,10 +17,7 @@ pub mod utils;
 use linguist_types::{HeuristicRule, Language};
 use std::path::Path;
 
-pub use error::LinguistError;
-
-/// Type alias for Results in this crate
-pub type Result<T> = std::result::Result<T, LinguistError>;
+pub use error::{LinguistError, Result};
 
 /// Represents a detected programming language.
 ///

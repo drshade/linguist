@@ -1,8 +1,7 @@
 use crate::error::LinguistError;
+pub use crate::error::Result;
+use crate::indexed;
 use std::path::Path;
-
-/// Type alias for Results in this crate
-pub type Result<T> = std::result::Result<T, LinguistError>;
 
 /// Helper function to extract filename from a path.
 ///
@@ -87,12 +86,19 @@ pub fn extract_extensions(filename: &str) -> Vec<String> {
 /// ```
 pub fn matches_pattern(patterns: &[String], content: &str) -> Result<bool> {
     for pattern in patterns {
-        let regex = fancy_regex::Regex::new(&format!("(?m){pattern}")).map_err(|e| {
-            LinguistError::InvalidRegex {
-                pattern: pattern.clone(),
-                error: e.to_string(),
+        // Patterns that come from the bundled heuristics are compiled once and cached (see
+        // `indexed::HEURISTIC_REGEXES`); anything else is compiled on the fly as before.
+        let ad_hoc;
+        let regex: &fancy_regex::Regex = match indexed::HEURISTIC_REGEXES.get(pattern.as_str()) {
+            Some(slot) => slot
+                .get_or_init(|| indexed::compile_heuristic_pattern(pattern))
+                .as_ref()
+                .map_err(Clone::clone)?,
+            None => {
+                ad_hoc = indexed::compile_heuristic_pattern(pattern)?;
+                &ad_hoc
             }
-        })?;
+        };
 
         if regex
             .is_match(content)
