@@ -62,4 +62,5 @@ Two independently versioned crates: `linguist` (root) and `linguist-types/`.
 Releases are tag-driven (`vX.Y.Z` push → CI tests, publishes to crates.io,
 creates the GitHub Release); the weekly sync PR already includes the patch
 version bump. Never bump versions or tag on your own initiative — the
-maintainer decides releases. See MAINTAINING.md.
+maintainer decides releases. `main` rejects direct pushes: every change,
+the maintainer's included, lands through a PR. See MAINTAINING.md.

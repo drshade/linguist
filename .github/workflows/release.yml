@@ -16,7 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      # No rust-cache here: the key includes the Cargo.lock hash, which changes on every
+      # version bump, so a release never hits the previous release's cache. Its post-run
+      # cleanup also trips over the target/package/ dir that `cargo publish` leaves behind.
       - name: Verify tag matches Cargo.toml version
         run: |
           CARGO_VERSION=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | select(.name == "linguist") | .version')
