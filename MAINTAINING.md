@@ -31,9 +31,9 @@ cargo test
 
 Then commit the resulting diffs: `definitions/*.yml`, `definitions/UPSTREAM_COMMIT`, and any `tests/samples.rs` change (see below).
 
-### If `pull-new.sh`'s patch step fails
+### If a heuristic regex fails to compile after a pull
 
-`heuristics.yml` is produced by applying `definitions/heuristics.patch` to the raw upstream `heuristics_original.yml`. The patch rewrites the one Ruby/Oniguruma regex feature `fancy-regex` cannot handle (the `\g<version>` subroutine call in the Adblock Filter List pattern). If `patch` fails, upstream changed that pattern — update `heuristics.patch` to match the new upstream text, then re-run.
+Upstream heuristics are used verbatim — there is no local patching. Upstream's own CI checks every heuristic pattern for portability across the Ruby, Go and Rust regex engines (`script/check-regex-compatibility` in github-linguist), so a pattern `fancy-regex` cannot compile should be rare. If one slips through, fix it upstream (as was done for the Adblock, Rez and Smarty patterns) rather than working around it here; a heuristic whose pattern fails to compile surfaces as a `LinguistError::InvalidRegex` only for files of that extension.
 
 ## Expected `tests/samples` failures after an upstream pull
 
