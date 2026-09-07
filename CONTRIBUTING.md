@@ -46,6 +46,9 @@ cargo test && cargo test --features cli
 
 Please also:
 
+- **Expect to go through a PR** — `main` doesn't accept direct pushes, for
+  the maintainer either; merged PRs are also what the release notes are
+  generated from.
 - **Don't bump version numbers or add tags** — releases are handled by the
   maintainer (versions are bumped automatically by the sync workflow, and
   publishing is tag-driven).

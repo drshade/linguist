@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write # to dispatch ci.yml on the PR branch
 
 env:
   CARGO_TERM_COLOR: always
@@ -41,6 +42,7 @@ jobs:
           cargo update --workspace
           echo "version=$NEW" >> "$GITHUB_OUTPUT"
       - name: Open pull request
+        id: pr
         if: steps.diff.outputs.changed != '0'
         uses: peter-evans/create-pull-request@v8
         with:
@@ -59,7 +61,11 @@ jobs:
             After merging, release with:
 
                 git pull && git tag v${{ steps.bump.outputs.version }} && git push origin --tags
-
-            Note: CI does not run automatically on PRs opened by a workflow's
-            `GITHUB_TOKEN` — close and reopen this PR (or push to the branch)
-            to trigger it if you want a CI run before merging.
+      - name: Trigger CI on the PR branch
+        # Events caused by GITHUB_TOKEN don't trigger other workflows, so the PR above gets
+        # no `pull_request` CI run. workflow_dispatch is exempt from that rule, and its
+        # check runs attach to the branch head, so the PR shows them like any other.
+        if: steps.pr.outputs.pull-request-operation == 'created' || steps.pr.outputs.pull-request-operation == 'updated'
+        run: gh workflow run ci.yml --ref auto/sync-upstream-definitions
+        env:
+          GH_TOKEN: ${{ github.token }}

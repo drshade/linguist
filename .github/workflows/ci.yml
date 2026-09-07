@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Dispatched by sync-upstream.yml on its PR branch: PRs opened with GITHUB_TOKEN
+  # don't fire `pull_request`, but workflow_dispatch is the sanctioned exception.
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
