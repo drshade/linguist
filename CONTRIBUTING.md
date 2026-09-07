@@ -15,9 +15,9 @@ an automated sync, and hand edits to them will be overwritten.
   upstream.
 - **Detection logic, API, CLI, performance, or a Rust bug** → this is the
   right repo, read on.
-- The one local exception: if an upstream heuristic regex is incompatible
-  with `fancy-regex`, the workaround lives in `definitions/heuristics.patch`
-  (see [MAINTAINING.md](MAINTAINING.md)).
+- That includes heuristic regexes `fancy-regex` can't compile: upstream
+  checks pattern portability across regex engines in its CI, so the fix
+  belongs there too (see [MAINTAINING.md](MAINTAINING.md)).
 
 ## Getting set up
 

@@ -14,12 +14,7 @@ echo "Upstream github-linguist HEAD: $SHA"
 
 RAW="https://raw.githubusercontent.com/github-linguist/linguist/$SHA/lib/linguist"
 curl -fsSL "$RAW/languages.yml" -o languages.yml
-curl -fsSL "$RAW/heuristics.yml" -o heuristics_original.yml
+curl -fsSL "$RAW/heuristics.yml" -o heuristics.yml
 curl -fsSL "$RAW/vendor.yml" -o vendor.yml
 
 echo "$SHA" > UPSTREAM_COMMIT
-
-# Patch the upstream heuristics to rewrite Ruby-specific regex features unsupported
-# by fancy-regex. Currently rewrites the Adblock Filter List pattern to inline the
-# \g<version> subroutine call. heuristics_original.yml is kept for reference.
-patch -o heuristics.yml heuristics_original.yml heuristics.patch
