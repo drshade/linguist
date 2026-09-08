@@ -51,7 +51,7 @@ Please also:
   generated from.
 - **Don't bump version numbers or add tags** — releases are handled by the
   maintainer (versions are bumped automatically by the sync workflow, and
-  publishing is tag-driven).
+  merging a version bump to main publishes it automatically).
 - Keep the PR focused on one change, and say what it does and why in the
   description.
 - Add or extend tests for behaviour changes (`tests/` has suites per

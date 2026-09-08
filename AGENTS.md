@@ -58,8 +58,10 @@ merges it.
 ## Workspace and releases
 
 Two independently versioned crates: `linguist` (root) and `linguist-types/`.
-Releases are tag-driven (`vX.Y.Z` push → CI tests, publishes to crates.io,
-creates the GitHub Release); the weekly sync PR already includes the patch
-version bump. Never bump versions or tag on your own initiative — the
-maintainer decides releases. `main` rejects direct pushes: every change,
-the maintainer's included, lands through a PR. See MAINTAINING.md.
+Merging a version bump to main *is* a release: once CI passes, the
+Auto-release workflow tags `vX.Y.Z` and the Release workflow publishes to
+crates.io and creates the GitHub Release. The weekly sync PR already
+includes the patch version bump. Never bump versions or tag on your own
+initiative — the maintainer decides releases. `main` rejects direct pushes:
+every change, the maintainer's included, lands through a PR. See
+MAINTAINING.md.

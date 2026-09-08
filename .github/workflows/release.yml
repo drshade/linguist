@@ -3,6 +3,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # Dispatched on a tag ref by auto-release.yml (tags it pushes don't fire `push` here).
+  # Also lets a release be re-run by hand from the Actions tab: pick the tag as the ref.
+  workflow_dispatch:
 
 permissions:
   contents: write

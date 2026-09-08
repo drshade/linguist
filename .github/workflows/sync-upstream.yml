@@ -58,9 +58,9 @@ jobs:
             snapshot in this workflow run (the bump only happens after a green
             test run).
 
-            After merging, release with:
-
-                git pull && git tag v${{ steps.bump.outputs.version }} && git push origin --tags
+            **Merging this PR releases v${{ steps.bump.outputs.version }}**: once CI
+            passes on main, the Auto-release workflow tags it and publishes to
+            crates.io (see MAINTAINING.md).
       - name: Trigger CI on the PR branch
         # Events caused by GITHUB_TOKEN don't trigger other workflows, so the PR above gets
         # no `pull_request` CI run. workflow_dispatch is exempt from that rule, and its
