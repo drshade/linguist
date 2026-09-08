@@ -33,7 +33,7 @@ Then commit the resulting diffs: `definitions/*.yml`, `definitions/UPSTREAM_COMM
 
 ### If a heuristic regex fails to compile after a pull
 
-Upstream heuristics are used verbatim — there is no local patching. Upstream's own CI checks every heuristic pattern for portability across the Ruby, Go and Rust regex engines (`script/check-regex-compatibility` in github-linguist), so a pattern `fancy-regex` cannot compile should be rare. If one slips through, fix it upstream (as was done for the Adblock, Rez and Smarty patterns) rather than working around it here; a heuristic whose pattern fails to compile surfaces as a `LinguistError::InvalidRegex` only for files of that extension.
+Upstream heuristics are used verbatim — there is no local patching. Upstream's own CI checks every heuristic pattern for portability across the Ruby, Go and Rust regex engines (`script/check-regex-compatibility` in github-linguist), so a pattern `fancy-regex` cannot compile should be rare. If one slips through, `tests/definitions_compile.rs` fails and names the offending rule (it compiles every heuristic and vendor pattern eagerly — at runtime the library compiles heuristics lazily, so without it a bad pattern would only surface as a `LinguistError::InvalidRegex` for files of that extension). Fix it upstream (as was done for the Adblock, Rez and Smarty patterns) rather than working around it here.
 
 ## Expected `tests/samples` failures after an upstream pull
 
