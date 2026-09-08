@@ -1,0 +1,58 @@
+name: Auto-release
+
+# Merging a version bump to main is the release decision. Once the CI workflow has passed
+# on main, this tags the commit `v<Cargo.toml version>` if that tag doesn't exist yet, and
+# dispatches the Release workflow on the tag. Pushes to main that don't bump the version
+# (code changes, Dependabot) find the tag already present and do nothing.
+#
+# Why dispatch instead of relying on Release's `push: tags` trigger: a tag pushed with the
+# built-in GITHUB_TOKEN doesn't fire other workflows; workflow_dispatch is the exception,
+# and a dispatch on a tag ref still gives Release the tag as GITHUB_REF_NAME.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write # push the tag
+  actions: write # dispatch release.yml
+
+# Two quick merges must not race each other to the tag.
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check whether Cargo.toml's version is already tagged
+        id: decide
+        run: |
+          VERSION=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | select(.name == "linguist") | .version')
+          TAG="v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "\`$TAG\` already exists — nothing to release." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Tag and dispatch Release
+        if: steps.decide.outputs.release == 'true'
+        run: |
+          git tag "$TAG" "$SHA"
+          git push origin "refs/tags/$TAG"
+          gh workflow run release.yml --ref "$TAG"
+          echo "Tagged \`$TAG\` at \`$SHA\` and dispatched the Release workflow." >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.decide.outputs.tag }}
+          SHA: ${{ github.event.workflow_run.head_sha }}

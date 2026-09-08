@@ -71,12 +71,14 @@ The workspace has two independently-versioned crates:
 | `linguist` | `Cargo.toml` (root `[package]`) | the published library; released via git tags |
 | `linguist-types` | `linguist-types/Cargo.toml` | serde types; depended on by the root via `linguist-types = { path = "linguist-types", version = "0.1" }` |
 
-To release `linguist`:
+Releasing `linguist` is driven by the version in the root `Cargo.toml`: **merging a version bump to main is the release**.
 
-1. Bump `version` in the root `Cargo.toml` (a definitions refresh changes detection behaviour but not the public API, so it is normally a **patch** bump — and sync PRs already include this bump). Run `cargo test` so `Cargo.lock` reflects the new version, and land it on main via a PR (main rejects direct pushes — see [Branch protection](#branch-protection)).
-2. Tag the merge commit and push the tag: `git pull && git tag vX.Y.Z && git push origin --tags`.
+1. Bump `version` in the root `Cargo.toml` (a definitions refresh changes detection behaviour but not the public API, so it is normally a **patch** bump — and sync PRs already include this bump, so merging a sync PR is a release). Run `cargo test` so `Cargo.lock` reflects the new version, and land it on main via a PR (main rejects direct pushes — see [Branch protection](#branch-protection)).
+2. When the **CI** workflow passes on main, the **Auto-release** workflow (`.github/workflows/auto-release.yml`) checks whether `v<version>` is already a tag. If not, it tags the commit and dispatches the **Release** workflow on that tag. Pushes that don't bump the version find the tag present and do nothing, so code-only PRs and Dependabot merges never release.
 3. The **Release** workflow (`.github/workflows/release.yml`) verifies the tag matches `Cargo.toml`, runs the tests, publishes to crates.io, and creates a GitHub Release with generated notes.
 
-The workflow needs a `CARGO_REGISTRY_TOKEN` repository secret (a crates.io API token with publish scope for `linguist`).
+The Release workflow needs a `CARGO_REGISTRY_TOKEN` repository secret (a crates.io API token with publish scope for `linguist`).
+
+Manual fallback: pushing a `vX.Y.Z` tag by hand still triggers Release directly, and Release can be re-run from the Actions tab by dispatching it with the tag as the ref. If a bad release ships, `cargo yank --version X.Y.Z` withdraws it from new resolutions (yanking never deletes), then bump and merge a fix.
 
 `linguist-types` releases stay manual (they are rare): bump its version, `cargo publish -p linguist-types`, and commit. If it crosses to `0.2.x`, update the root's `version = "0.1"` dep spec too — and publish `linguist-types` **before** tagging a `linguist` release that depends on it.
