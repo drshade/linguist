@@ -53,6 +53,36 @@ pub static LANGUAGES_BY_EXTENSION: LazyLock<HashMap<Extension, BTreeSet<Language
         index
     });
 
+pub type Alias = String;
+
+/// Languages keyed by lowercased alias, mirroring upstream's `Language.find_by_alias`: each
+/// language's default alias (its name, lowercased, whitespace replaced by `-`) plus every
+/// entry in its `aliases` list.
+pub static LANGUAGES_BY_ALIAS: LazyLock<HashMap<Alias, LanguageName>> = LazyLock::new(|| {
+    let mut index = HashMap::new();
+
+    for (lang_name, lang_def) in definitions::LANGUAGES.iter() {
+        let default_alias = lang_name.to_lowercase().replace(char::is_whitespace, "-");
+        index.insert(default_alias, lang_name.clone());
+        for alias in lang_def.aliases.iter().flatten() {
+            index.insert(alias.to_lowercase(), lang_name.clone());
+        }
+    }
+
+    index
+});
+
+/// Emacs and Vim modeline patterns, in the order they are tried. Each captures the mode or
+/// filetype name in group 1. These are collapsed forms of `EMACS_MODELINE` and
+/// `VIM_MODELINE` in upstream's `lib/linguist/strategy/modeline.rb` (which documents them
+/// piece by piece). Ruby's `^`/`$` always anchor to lines, hence `(?m)`; Ruby's `(?-m)` is
+/// the default `.` behaviour here.
+pub static MODELINE_REGEXES: LazyLock<[Regex; 2]> = LazyLock::new(|| {
+    const EMACS: &str = r"(?i)-\*-(?:[ \t]*(?=[^:;\s]+[ \t]*-\*-)|(?:.*?[ \t;]|(?<=-\*-))[ \t]*mode[ \t]*:[ \t]*)([^:;\s]+)(?=[ \t;]|(?<![-*])-\*-).*?-\*-";
+    const VIM: &str = r"(?m)(?:(?:^|[ \t])(?:vi|Vi(?=m))(?:m[<=>]?[0-9]+|m)?|[ \t]ex)(?=:(?=[ \t]*set?[ \t][^\r\n:]+:)|:(?![ \t]*set?[ \t]))(?:(?:[ \t]*:[ \t]*|[ \t])\w*(?:[ \t]*=(?:[^\\\s]|\\.)*)?)*[ \t:](?:filetype|ft|syntax)[ \t]*=(\w+)(?=$|\s|:)";
+    [EMACS, VIM].map(|pattern| Regex::new(pattern).expect("built-in modeline regex compiles"))
+});
+
 pub static DISAMBIGUATIONS_BY_EXTENSION: LazyLock<HashMap<Extension, Vec<Disambiguation>>> =
     LazyLock::new(|| {
         // Process the HEURISTICS struct, building up the index

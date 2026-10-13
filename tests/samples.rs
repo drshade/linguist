@@ -1,5 +1,8 @@
 mod test_samples {
-    use linguist::{detect_language_by_extension, detect_language_by_filename, disambiguate};
+    use linguist::{
+        detect_language_by_extension, detect_language_by_filename, detect_language_by_modeline,
+        disambiguate,
+    };
     use std::fs;
     use std::path::Path;
 
@@ -16,8 +19,9 @@ mod test_samples {
 
     /// Run the detection pipeline for a single sample file.
     /// For files under a `filenames/` directory, use filename-based detection.
-    /// Otherwise try extension-based detection, falling back to content
-    /// disambiguation when the extension is ambiguous.
+    /// Otherwise a modeline wins outright (as upstream checks it first), then
+    /// extension-based detection, falling back to content disambiguation when the
+    /// extension is ambiguous.
     fn detect(path: &Path, is_filenames_dir: bool) -> Vec<String> {
         let to_names = |langs: Vec<linguist::DetectedLanguage>| -> Vec<String> {
             langs.into_iter().map(|l| l.name.to_string()).collect()
@@ -25,6 +29,12 @@ mod test_samples {
 
         if is_filenames_dir {
             return to_names(detect_language_by_filename(path).unwrap_or_default());
+        }
+
+        let content = fs::read_to_string(path).unwrap_or_default();
+        let by_modeline = to_names(detect_language_by_modeline(&content).unwrap_or_default());
+        if !by_modeline.is_empty() {
+            return by_modeline;
         }
 
         let by_ext = to_names(detect_language_by_extension(path).unwrap_or_default());
@@ -38,7 +48,6 @@ mod test_samples {
             1 => by_ext,
             _ => {
                 // Ambiguous extension — try content-based disambiguation
-                let content = fs::read_to_string(path).unwrap_or_default();
                 let disambiguated = to_names(disambiguate(path, &content).unwrap_or_default());
                 if disambiguated.is_empty() {
                     by_ext

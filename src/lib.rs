@@ -4,6 +4,7 @@
 //! This crate provides fast, accurate programming language detection using:
 //! - File extension matching
 //! - Exact filename matching
+//! - Vim and Emacs modeline detection
 //! - Content-based heuristic disambiguation
 //! - Vendored file detection
 //!
@@ -141,6 +142,87 @@ pub fn detect_language_by_filename<P: AsRef<Path>>(filepath: P) -> Result<Vec<De
     }
 
     Ok(matching_languages)
+}
+
+/// Number of lines searched for a modeline at each end of the file (upstream's `SEARCH_SCOPE`).
+const MODELINE_SEARCH_SCOPE: usize = 5;
+
+/// Detects a language from a Vim or Emacs modeline in the file contents.
+///
+/// Editors read a mode declaration from a comment near the start or end of a file, such as
+/// `vim: set ft=ruby:` or `-*- mode: ruby -*-`. This function searches the first and last
+/// five lines for one, like upstream linguist's modeline strategy, and resolves the declared
+/// mode against language names and aliases (`ft=help` resolves to "Vim Help File").
+///
+/// Unlike [`disambiguate`], the result does not depend on the filename: a modeline is an
+/// explicit statement of the file's language, so upstream applies it before any other
+/// strategy.
+///
+/// # Arguments
+///
+/// * `file_contents` - The contents of the file to analyze
+///
+/// # Returns
+///
+/// A Result containing a vector with the declared language, or an empty vector if there is
+/// no modeline or it names no known language.
+///
+/// # Examples
+///
+/// ```
+/// use linguist::detect_language_by_modeline;
+///
+/// let langs = detect_language_by_modeline("# -*- mode: ruby -*-\nputs 'Hello'\n")?;
+/// assert_eq!(langs[0].name, "Ruby");
+///
+/// let langs = detect_language_by_modeline("Some help text\n vim:tw=78:ts=8:ft=help:norl:\n")?;
+/// assert_eq!(langs[0].name, "Vim Help File");
+/// # Ok::<(), linguist::LinguistError>(())
+/// ```
+pub fn detect_language_by_modeline(file_contents: &str) -> Result<Vec<DetectedLanguage>> {
+    let content = file_contents
+        .strip_prefix('\u{FEFF}')
+        .unwrap_or(file_contents);
+    let lines: Vec<&str> = content.lines().collect();
+
+    let header = &lines[..lines.len().min(MODELINE_SEARCH_SCOPE)];
+    // A Vimball's modeline describes the archive format, not the file's language
+    if header.iter().any(|line| line.contains("UseVimball")) {
+        return Ok(vec![]);
+    }
+    let footer = &lines[lines.len().saturating_sub(MODELINE_SEARCH_SCOPE)..];
+    let haystack = [header, footer].concat().join("\n");
+
+    for regex in indexed::MODELINE_REGEXES.iter() {
+        let captures = regex
+            .captures(&haystack)
+            .map_err(|e| LinguistError::InvalidRegex {
+                pattern: regex.as_str().to_string(),
+                error: e.to_string(),
+            })?;
+        let Some(mode) = captures.and_then(|c| c.get(1)) else {
+            continue;
+        };
+
+        // Like upstream's `find_by_alias`, fall back to the part before a comma
+        let mode = mode.as_str().to_lowercase();
+        let lang_name = indexed::LANGUAGES_BY_ALIAS
+            .get(&mode)
+            .or_else(|| indexed::LANGUAGES_BY_ALIAS.get(mode.split(',').next()?));
+        return Ok(lang_name
+            .and_then(|name| {
+                definitions::LANGUAGES
+                    .get(name)
+                    .map(|lang_def| DetectedLanguage {
+                        name: name.as_str(),
+                        definition: lang_def,
+                    })
+            })
+            .into_iter()
+            .collect());
+    }
+
+    Ok(vec![])
 }
 
 /// Disambiguates between multiple languages for a file using heuristic rules.

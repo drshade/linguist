@@ -25,7 +25,7 @@ pub struct Cli {
     #[arg(short = 'f', long = "by-filename")]
     pub by_filename: bool,
 
-    /// Detect by content analysis/heuristics only
+    /// Detect by content analysis (modelines and heuristics) only
     #[arg(short = 'c', long = "by-content")]
     pub by_content: bool,
 
