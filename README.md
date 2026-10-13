@@ -1,10 +1,11 @@
 # Linguist
 
-A Rust library for programming language detection, inspired by [GitHub Linguist](https://github.com/github/linguist). Detects programming languages by file extension, filename, and content-based heuristics.
+A Rust library for programming language detection, inspired by [GitHub Linguist](https://github.com/github/linguist). Detects programming languages by file extension, filename, editor modelines, and content-based heuristics.
 
 ## Features
 
-- Zero configuration and setup required, just add the crate and call the detection functions 
+- Zero configuration and setup required, just add the crate and call `detect_language`
+- One call runs every strategy in upstream linguist's order, or use each on its own
 - Detect languages by exact filename match (e.g., `Makefile`, `Dockerfile`)
 - Detect languages by file extension (e.g., `.rs`, `.py`, `.js`)
 - Detect languages from Vim and Emacs modelines (e.g., `vim: ft=ruby`, `-*- mode: ruby -*-`)
@@ -12,6 +13,27 @@ A Rust library for programming language detection, inspired by [GitHub Linguist]
 - Identify vendored/third-party files
 
 ## Usage
+
+### Detect a File's Language
+
+`detect_language` runs modeline, filename, extension and heuristic detection in turn,
+stopping as soon as one language remains. It returns one language when detection is
+conclusive, several candidates when the file is still ambiguous, and none when it's unknown.
+
+```rust
+use linguist::detect_language;
+
+let content = std::fs::read_to_string("src/widget.h").ok();
+let languages = detect_language("src/widget.h", content.as_deref())?;
+if let [language] = languages.as_slice() {
+    println!("{}", language.name);
+}
+```
+
+Pass `None` for the content when it isn't available (for example, binary files);
+only the filename and extension are considered then.
+
+The individual strategies below are available for callers that need just one.
 
 ### Detect by Extension
 
@@ -37,10 +59,8 @@ assert_eq!(languages[0].name, "Makefile");
 use linguist::disambiguate;
 
 let content = "#include <iostream>\nint main() {}";
-let result = disambiguate("test.h", content)?;
-if let Some(languages) = result {
-    assert_eq!(languages[0].name, "C++");
-}
+let languages = disambiguate("test.h", content)?;
+assert_eq!(languages[0].name, "C++");
 ```
 
 ### Detect by Modeline

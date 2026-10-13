@@ -1,8 +1,5 @@
 mod test_samples {
-    use linguist::{
-        detect_language_by_extension, detect_language_by_filename, detect_language_by_modeline,
-        disambiguate,
-    };
+    use linguist::detect_language;
     use std::fs;
     use std::path::Path;
 
@@ -17,45 +14,14 @@ mod test_samples {
         }
     }
 
-    /// Run the detection pipeline for a single sample file.
-    /// For files under a `filenames/` directory, use filename-based detection.
-    /// Otherwise a modeline wins outright (as upstream checks it first), then
-    /// extension-based detection, falling back to content disambiguation when the
-    /// extension is ambiguous.
-    fn detect(path: &Path, is_filenames_dir: bool) -> Vec<String> {
-        let to_names = |langs: Vec<linguist::DetectedLanguage>| -> Vec<String> {
-            langs.into_iter().map(|l| l.name.to_string()).collect()
-        };
-
-        if is_filenames_dir {
-            return to_names(detect_language_by_filename(path).unwrap_or_default());
-        }
-
-        let content = fs::read_to_string(path).unwrap_or_default();
-        let by_modeline = to_names(detect_language_by_modeline(&content).unwrap_or_default());
-        if !by_modeline.is_empty() {
-            return by_modeline;
-        }
-
-        let by_ext = to_names(detect_language_by_extension(path).unwrap_or_default());
-
-        match by_ext.len() {
-            0 => {
-                // No extension match — fall back to filename (e.g. extensionless files
-                // like `Makefile`, `Dockerfile`, dotfiles)
-                to_names(detect_language_by_filename(path).unwrap_or_default())
-            }
-            1 => by_ext,
-            _ => {
-                // Ambiguous extension — try content-based disambiguation
-                let disambiguated = to_names(disambiguate(path, &content).unwrap_or_default());
-                if disambiguated.is_empty() {
-                    by_ext
-                } else {
-                    disambiguated
-                }
-            }
-        }
+    /// Run the full detection pipeline for a single sample file.
+    fn detect(path: &Path) -> Vec<String> {
+        let content = fs::read_to_string(path).ok();
+        detect_language(path, content.as_deref())
+            .unwrap_or_default()
+            .into_iter()
+            .map(|l| l.name.to_string())
+            .collect()
     }
 
     #[test]
@@ -110,7 +76,6 @@ mod test_samples {
                             check(
                                 expected,
                                 &fname_path,
-                                true,
                                 &mut passed,
                                 &mut failed,
                                 &mut skipped,
@@ -125,7 +90,6 @@ mod test_samples {
                     check(
                         expected,
                         &path,
-                        false,
                         &mut passed,
                         &mut failed,
                         &mut skipped,
@@ -151,13 +115,12 @@ mod test_samples {
     fn check(
         expected: &str,
         path: &Path,
-        is_filenames_dir: bool,
         passed: &mut usize,
         failed: &mut usize,
         skipped: &mut usize,
         failures: &mut Vec<String>,
     ) {
-        let detected = detect(path, is_filenames_dir);
+        let detected = detect(path);
         if detected.iter().any(|n| n == expected) {
             *passed += 1;
         } else if detected.is_empty() {

@@ -8,6 +8,10 @@
 //! - Content-based heuristic disambiguation
 //! - Vendored file detection
 //!
+//! [`detect_language`] combines these into a single answer, in the same order as upstream
+//! linguist; the individual `detect_language_by_*` functions and [`disambiguate`] remain
+//! available for callers that need one strategy on its own.
+//!
 //! All language data is embedded at compile-time for zero-cost lookups.
 
 pub mod definitions;
@@ -30,6 +34,111 @@ pub struct DetectedLanguage {
 
     /// The full language definition with metadata (type, color, extensions, etc.)
     pub definition: &'static Language,
+}
+
+/// Detects a file's language by running each detection strategy in turn.
+///
+/// This is the function most callers want. It follows upstream linguist's strategy order,
+/// with each step narrowing the candidates left by the previous one:
+///
+/// 1. **Modeline** (needs content): an explicit `vim: ft=…` or `-*- mode: … -*-` wins outright.
+/// 2. **Filename**: exact names such as `Makefile` or `.gitignore`.
+/// 3. **Extension**: narrows the filename candidates, if there were any.
+/// 4. **Heuristics** (needs content): disambiguates when candidates remain ambiguous.
+///
+/// Detection stops as soon as a single language remains. A step that finds nothing leaves
+/// the candidates from earlier steps in place.
+///
+/// # Arguments
+///
+/// * `filepath` - Path or filename of the file
+/// * `file_contents` - The file's contents, or `None` if unavailable (for example, a binary
+///   file). Without contents only the filename and extension are considered.
+///
+/// # Returns
+///
+/// A Result containing a vector of DetectedLanguage:
+/// - one language when detection is conclusive,
+/// - several when the file is still ambiguous (the remaining candidates),
+/// - none when the language is unknown.
+///
+/// # Examples
+///
+/// ```
+/// use linguist::detect_language;
+///
+/// // Unambiguous extension, so no content needed
+/// let langs = detect_language("script.py", None)?;
+/// assert_eq!(langs[0].name, "Python");
+///
+/// // `.rs` is shared with RenderScript and XML: without content, all are returned
+/// let langs = detect_language("src/main.rs", None)?;
+/// assert!(langs.len() > 1);
+/// let langs = detect_language("src/main.rs", Some("fn main() {}\n"))?;
+/// assert_eq!(langs[0].name, "Rust");
+///
+/// // Ambiguous extension, resolved by content
+/// let langs = detect_language("widget.h", Some("#include <iostream>\nclass Widget {};\n"))?;
+/// assert_eq!(langs.len(), 1);
+/// assert_eq!(langs[0].name, "C++");
+///
+/// // A modeline overrides the extension
+/// let langs = detect_language("notes.txt", Some("# vim: ft=ruby\n"))?;
+/// assert_eq!(langs[0].name, "Ruby");
+/// # Ok::<(), linguist::LinguistError>(())
+/// ```
+pub fn detect_language<P: AsRef<Path>>(
+    filepath: P,
+    file_contents: Option<&str>,
+) -> Result<Vec<DetectedLanguage>> {
+    let path = filepath.as_ref();
+
+    if let Some(content) = file_contents {
+        let by_modeline = detect_language_by_modeline(content)?;
+        if !by_modeline.is_empty() {
+            return Ok(by_modeline);
+        }
+    }
+
+    let candidates = detect_language_by_filename(path)?;
+    if candidates.len() == 1 {
+        return Ok(candidates);
+    }
+
+    let candidates = narrow_candidates(candidates, detect_language_by_extension(path)?);
+    if candidates.len() <= 1 {
+        return Ok(candidates);
+    }
+
+    if let Some(content) = file_contents {
+        let by_content = disambiguate(path, content)?;
+        if !by_content.is_empty() {
+            return Ok(by_content);
+        }
+    }
+
+    Ok(candidates)
+}
+
+/// Narrows `candidates` to those also in `found`, as upstream's strategies do. An empty
+/// side carries no information, so the other side is returned unchanged.
+fn narrow_candidates(
+    candidates: Vec<DetectedLanguage>,
+    found: Vec<DetectedLanguage>,
+) -> Vec<DetectedLanguage> {
+    if candidates.is_empty() {
+        return found;
+    }
+    let narrowed: Vec<DetectedLanguage> = candidates
+        .iter()
+        .filter(|candidate| found.iter().any(|lang| lang.name == candidate.name))
+        .cloned()
+        .collect();
+    if narrowed.is_empty() {
+        candidates
+    } else {
+        narrowed
+    }
 }
 
 /// Detects programming language(s) by file extension.
