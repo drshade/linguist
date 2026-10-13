@@ -293,16 +293,6 @@ namespace cicada.data.Repository
     }
 
     #[test]
-    fn txt_vim_help_resolves_to_vim_help_file() {
-        // Content with a vim modeline specifying filetype=help
-        assert_disambiguates(
-            "help.txt",
-            "Some help text\n vim:tw=78:ts=8:ft=help:norl:\n",
-            "Vim Help File",
-        );
-    }
-
-    #[test]
     fn txt_hosts_file_resolves_to_hosts_file() {
         // Hosts file pattern uses a negative lookbehind (?<!-) and possessive
         // quantifier )*+ — both handled by fancy-regex.

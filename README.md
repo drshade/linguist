@@ -7,6 +7,7 @@ A Rust library for programming language detection, inspired by [GitHub Linguist]
 - Zero configuration and setup required, just add the crate and call the detection functions 
 - Detect languages by exact filename match (e.g., `Makefile`, `Dockerfile`)
 - Detect languages by file extension (e.g., `.rs`, `.py`, `.js`)
+- Detect languages from Vim and Emacs modelines (e.g., `vim: ft=ruby`, `-*- mode: ruby -*-`)
 - Disambiguate between multiple languages using content heuristics
 - Identify vendored/third-party files
 
@@ -40,6 +41,15 @@ let result = disambiguate("test.h", content)?;
 if let Some(languages) = result {
     assert_eq!(languages[0].name, "C++");
 }
+```
+
+### Detect by Modeline
+
+```rust
+use linguist::detect_language_by_modeline;
+
+let languages = detect_language_by_modeline("# -*- mode: ruby -*-\nputs 'Hello'\n")?;
+assert_eq!(languages[0].name, "Ruby");
 ```
 
 ### Check if Vendored

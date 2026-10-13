@@ -3,7 +3,8 @@ mod cli;
 use clap::Parser;
 use cli::{Cli, DetectionMethods};
 use linguist::{
-    detect_language_by_extension, detect_language_by_filename, disambiguate, is_vendored,
+    detect_language_by_extension, detect_language_by_filename, detect_language_by_modeline,
+    disambiguate, is_vendored,
 };
 use std::process;
 
@@ -86,6 +87,23 @@ fn process_file(
     if methods.by_content {
         match std::fs::read_to_string(filepath) {
             Ok(content) => {
+                match detect_language_by_modeline(&content) {
+                    Ok(languages) if !languages.is_empty() => {
+                        found_any = true;
+                        let names: Vec<&str> = languages.iter().map(|l| l.name).collect();
+                        println!(
+                            "{}: {} (by modeline) {}",
+                            filepath,
+                            names.join(", "),
+                            vendored_status
+                        );
+                    }
+                    Ok(_) => {} // No matches, that's ok
+                    Err(e) => eprintln!(
+                        "Warning: Error detecting by modeline for {}: {}",
+                        filepath, e
+                    ),
+                }
                 match disambiguate(filepath, &content) {
                     Ok(languages) if !languages.is_empty() => {
                         found_any = true;
